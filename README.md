@@ -1,5 +1,4 @@
-Nama : Khanyfatul Muflikhat
+Nama : Khanyfatul Muflikhat 
+NPM : 2506589755 
+Kelas : PBP A 
 
-NPM : 2506589755
-
-Kelas : PBP A
