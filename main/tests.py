@@ -86,3 +86,17 @@ class AchievementTest(TestCase):
         response = self.client.get(reverse("main:show_achievement"))
 
         self.assertContains(response, "Belum ada penghargaan yang ditambahkan.")
+
+    def test_filter_by_level(self):
+        Achievement.objects.create(
+            title="Regional Robotics Competition",
+            issuer="Dinas Pendidikan",
+            description="Juara di kompetisi robotika tingkat regional.",
+            level="regional",
+            date_achieved="2022-05-01",
+        )
+
+        response = self.client.get(reverse("main:show_achievement"), {"level": "national"})
+
+        self.assertContains(response, self.achievement.title)
+        self.assertNotContains(response, "Regional Robotics Competition")
