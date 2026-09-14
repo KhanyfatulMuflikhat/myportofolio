@@ -247,6 +247,7 @@ h1, .brand {
     transform: translateY(-2px);
 }
 
+
 @media (max-width: 600px) {
     .skills-grid {
         grid-template-columns: 1fr;
@@ -341,6 +342,7 @@ h1, .brand {
     }
 }
 
+/* projects */
 #projects {
     padding: 4rem 0 5rem;
     border-top: 1px solid var(--line);
@@ -499,6 +501,53 @@ h1, .brand {
 }
 
 .experience-status {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* achievement */
+.achievement-section {
+    padding: 4rem 0;
+    border-top: 1px solid var(--line);
+}
+
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.achievement-card {
+    padding: 1.25rem;
+    background-color: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+
+.achievement-level {
+    color: var(--accent-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.achievement-card h2 {
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+}
+
+.achievement-issuer {
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.achievement-description {
+    color: var(--text-muted);
+}
+
+.achievement-date {
     margin-top: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
