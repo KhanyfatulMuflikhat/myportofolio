@@ -26,11 +26,22 @@
             <div class="container">
                 <p class="section-kicker">Penghargaan yang pernah saya raih</p>
                 <h1>Achievements</h1>
-
+                <div class="achievement-filter">
+                    <a href="{% url 'main:show_achievement' %}"
+                    class="filter-pill {% if not selected_level %}active{% endif %}">
+                        All
+                    </a>
+                    {% for value, label in level_choices %}
+                        <a href="{% url 'main:show_achievement' %}?level={{ value }}"
+                        class="filter-pill {% if selected_level == value %}active{% endif %}">
+                            {{ label }}
+                        </a>
+                    {% endfor %}
+                </div>
                 <div class="achievement-grid">
                     {% for achievement in achievement_list %}
                         <article class="achievement-card">
-                            <span class="achievement-level">
+                            <span class="achievement-level level-{{ achievement.level }}">
                                 {{ achievement.get_level_display }}
                             </span>
                             <h2>{{ achievement.title }}</h2>
@@ -41,9 +52,15 @@
                             <p class="achievement-date">{{ achievement.date_achieved }}</p>
                         </article>
                     {% empty %}
-                        <p class="empty-state">
-                            Belum ada penghargaan yang ditambahkan.
-                        </p>
+                        {% if selected_level %}
+                            <p class="empty-state">
+                                Belum ada penghargaan pada kategori ini.
+                            </p>
+                        {% else %}
+                            <p class="empty-state">
+                                Belum ada penghargaan yang ditambahkan.
+                            </p>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>
