@@ -25,8 +25,15 @@ def show_experience(request):
 
 
 def show_achievement(request):
+    achievement_list = Achievement.objects.all()
+    selected_level = request.GET.get('level')
+    if selected_level:
+        achievement_list = achievement_list.filter(level=selected_level)
+
     context = {
         "name": "Khanyfatul Muflikhat",
-        "achievement_list": Achievement.objects.all(),
+        "achievement_list": achievement_list,
+        "level_choices": Achievement.LEVEL_CHOICES,
+        "selected_level": selected_level,
     }
     return render(request, "achievement.html", context)
