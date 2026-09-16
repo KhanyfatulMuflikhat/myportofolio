@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from main.models import Experience, Achievement
 from main.forms import AchievementForm
+from django.conf import settings
 
 def show_main(request):
     context = {
@@ -48,10 +49,16 @@ def show_achievement(request):
 def create_achievement(request):
     form = AchievementForm(request.POST or None)
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Pencapaian baru berhasil ditambahkan!")
-        return redirect("main:show_achievement")
+    if request.method == "POST":
+        if form.is_valid():
+            input_password = form.cleaned_data.get("password")
+            if input_password != settings.ACHIEVEMENT_SECRET:
+                messages.error(request, "Wrong password🤷‍♂️!")
+            else:
+                achievement = form.save(commit=False)
+                achievement.save()
+                messages.success(request, "New achievement succesfully added!!")
+                return redirect("main:show_achievement")
 
     context = {
         "name": "Khanyfatul Muflikhat",
@@ -73,8 +80,11 @@ def delete_achievement(request, achievement_id):
     achievement = get_object_or_404(Achievement, pk=achievement_id)
 
     if request.method == "POST":
-        achievement.delete()
-        messages.success(request, "Pencapaian berhasil dihapus!")
-        return redirect("main:show_achievement")
+        input_password = request.POST.get("password", "")
+        if input_password != settings.ACHIEVEMENT_SECRET:
+            messages.error(request, "Incorrect password, deletion canceled!")
+        else:
+            achievement.delete()
+            messages.success(request, "Achievement succesfully deleted!")
 
     return redirect("main:show_achievement")

@@ -30,5 +30,24 @@
             <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
         </div>
     </footer>
+    {% if messages %}
+    <div id="toast-container" class="toast-container">
+        {% for message in messages %}
+            <div class="toast toast-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const toasts = document.querySelectorAll(".toast");
+            toasts.forEach((toast, i) => {
+                setTimeout(() => toast.classList.add("toast-show"), 50 * i);
+                setTimeout(() => {
+                    toast.classList.remove("toast-show");
+                    toast.classList.add("toast-hide");
+                }, 3500 + 50 * i);
+            });
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

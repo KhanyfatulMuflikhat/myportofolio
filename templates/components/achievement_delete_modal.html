@@ -2,9 +2,9 @@
     <button type="button"
             class="button button-danger"
             popovertarget="delete-achievement-{{ achievement.id }}"
-            aria-label="Hapus {{ achievement.title }}"
-            title="Hapus pencapaian">
-        Hapus
+            aria-label="Delete {{ achievement.title }}"
+            title="Delete achievement">
+        Delete
     </button>
 </p>
 <div id="delete-achievement-{{ achievement.id }}"
@@ -17,27 +17,35 @@
             class="project-delete-modal__backdrop"
             popovertarget="delete-achievement-{{ achievement.id }}"
             popovertargetaction="hide"
-            aria-label="Tutup konfirmasi hapus"></button>
+            aria-label="Close delete confirmation"></button>
     <div class="project-delete-modal__content">
         <button type="button"
                 class="project-delete-modal__close"
                 popovertarget="delete-achievement-{{ achievement.id }}"
                 popovertargetaction="hide"
-                aria-label="Tutup konfirmasi hapus">×</button>
-        <h2 id="delete-achievement-title-{{ achievement.id }}">Hapus Pencapaian?</h2>
+                aria-label="Close delete confirmation">×</button>
+        <h2 id="delete-achievement-title-{{ achievement.id }}">Delete this achievement?</h2>
         <p>
-            Apakah Anda yakin ingin menghapus
+            Are you sure you want to delete
             <strong>{{ achievement.title }}</strong>?
         </p>
-        <div class="project-delete-modal__actions">
-            <button type="button"
-                    class="button button-secondary"
-                    popovertarget="delete-achievement-{{ achievement.id }}"
-                    popovertargetaction="hide">Batal</button>
-            <form method="post" action="{% url 'main:delete_achievement' achievement.id %}">
-                {% csrf_token %}
-                <button type="submit" class="button button-danger">Ya, Hapus</button>
-            </form>
-        </div>
+        <form method="post" action="{% url 'main:delete_achievement' achievement.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="delete-password-{{ achievement.id }}">Secret Code</label>
+                <input type="password"
+                       name="password"
+                       id="delete-password-{{ achievement.id }}"
+                       placeholder="Enter secret code"
+                       required>
+            </div>
+            <div class="project-delete-modal__actions">
+                <button type="button"
+                        class="button button-secondary"
+                        popovertarget="delete-achievement-{{ achievement.id }}"
+                        popovertargetaction="hide">Cancel</button>
+                <button type="submit" class="button button-danger">Yes, delete this</button>
+            </div>
+        </form>
     </div>
 </div>
