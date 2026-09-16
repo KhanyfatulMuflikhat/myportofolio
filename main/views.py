@@ -54,7 +54,7 @@ def create_achievement(request):
         return redirect("main:show_achievement")
 
     context = {
-        "name": "<nama kamu>",
+        "name": "Khanyfatul Muflikhat",
         "form": form,
     }
     return render(request, "achievement_form.html", context)
@@ -68,3 +68,13 @@ def get_achievements_json(request):
 
     achievements_json = serializers.serialize("json", achievements)
     return HttpResponse(achievements_json, content_type="application/json")
+
+def delete_achievement(request, achievement_id):
+    achievement = get_object_or_404(Achievement, pk=achievement_id)
+
+    if request.method == "POST":
+        achievement.delete()
+        messages.success(request, "Pencapaian berhasil dihapus!")
+        return redirect("main:show_achievement")
+
+    return redirect("main:show_achievement")
