@@ -27,12 +27,15 @@ def show_experience(request):
     }
     return render(request, "experience.html", context)
 
-
 def show_achievement(request):
-    achievement_list = Achievement.objects.all()
-    selected_level = request.GET.get('level')
-    if selected_level:
-        achievement_list = achievement_list.filter(level=selected_level)
+    json_response = get_achievements_json(request)
+
+    achievements = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    achievement_list = [a.object for a in achievements]
+    selected_level = request.GET.get("level")
 
     context = {
         "name": "Khanyfatul Muflikhat",
