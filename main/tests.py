@@ -100,3 +100,35 @@ class AchievementTest(TestCase):
 
         self.assertContains(response, self.achievement.title)
         self.assertNotContains(response, "Regional Robotics Competition")
+
+class AchievementFormTest(TestCase):
+    def test_create_achievement_page_accessible(self):
+        response = self.client.get(reverse("main:create_achievement"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_create_achievement_post_valid(self):
+        response = self.client.post(reverse("main:create_achievement"), {
+            "title": "Test Achievement",
+            "issuer": "Test Issuer",
+            "description": "Test desc",
+            "level": "school",
+            "date_achieved": "2026-01-01",
+            "certificate_url": "",
+        })
+        self.assertEqual(Achievement.objects.count(), 1)
+        self.assertRedirects(response, reverse("main:show_achievement"))
+
+    def test_json_endpoint_returns_valid_json(self):
+        response = self.client.get(reverse("main:get_achievements_json"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-type"], "application/json")
+
+    def test_delete_achievement(self):
+        achievement = Achievement.objects.create(
+            title="To Delete", issuer="X", description="Y",
+            level="school", date_achieved="2026-01-01",
+        )
+        response = self.client.post(
+            reverse("main:delete_achievement", args=[achievement.id])
+        )
+        self.assertEqual(Achievement.objects.count(), 0)
