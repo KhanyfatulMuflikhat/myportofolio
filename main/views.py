@@ -1,7 +1,11 @@
 from django.shortcuts import render
+from django.contrib import messages
+from django.core import serializers
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 
 from main.models import Experience, Achievement
-
+from main.forms import AchievementForm
 
 def show_main(request):
     context = {
@@ -37,3 +41,17 @@ def show_achievement(request):
         "selected_level": selected_level,
     }
     return render(request, "achievement.html", context)
+
+def create_achievement(request):
+    form = AchievementForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pencapaian baru berhasil ditambahkan!")
+        return redirect("main:show_achievement")
+
+    context = {
+        "name": "<nama kamu>",
+        "form": form,
+    }
+    return render(request, "achievement_form.html", context)
