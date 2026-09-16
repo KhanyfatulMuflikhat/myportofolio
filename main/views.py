@@ -55,3 +55,13 @@ def create_achievement(request):
         "form": form,
     }
     return render(request, "achievement_form.html", context)
+
+def get_achievements_json(request):
+    level_query = request.GET.get("level", "").strip()
+    achievements = Achievement.objects.all()
+
+    if level_query:
+        achievements = achievements.filter(level=level_query)
+
+    achievements_json = serializers.serialize("json", achievements)
+    return HttpResponse(achievements_json, content_type="application/json")
