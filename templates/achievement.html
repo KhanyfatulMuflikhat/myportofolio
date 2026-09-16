@@ -5,7 +5,13 @@
         <section class="achievement-section" id="achievement">
             <div class="container">
                 <p class="section-kicker">Penghargaan yang pernah saya raih</p>
-                <h1>Achievements</h1>
+                <div class="project-header">
+                    <h1>Achievements</h1>
+                    <a href="{% url 'main:create_achievement' %}" class="button project-add-button">
+                        <span aria-hidden="true">+</span>
+                        Add Achievement
+                    </a>
+                </div>
                 <div class="achievement-filter">
                     <a href="{% url 'main:show_achievement' %}"
                     class="filter-pill {% if not selected_level %}active{% endif %}">
@@ -30,6 +36,11 @@
                                 {{ achievement.description }}
                             </p>
                             <p class="achievement-date">{{ achievement.date_achieved }}</p>
+                            <div class="project-card-actions">
+                                <div class="project-actions">
+                                    {% include "components/achievement_delete_modal.html" with achievement=achievement %}
+                                </div>
+                            </div>
                         </article>
                     {% empty %}
                         {% if selected_level %}
