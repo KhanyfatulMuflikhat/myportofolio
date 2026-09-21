@@ -1,3 +1,5 @@
+import uuid
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -158,3 +160,70 @@ class AchievementFormTest(TestCase):
             {"password": "wrong-secret"},
         )
         self.assertEqual(Achievement.objects.count(), 1)
+
+class AchievementUpdateTest(TestCase):
+    def setUp(self):
+        self.achievement = Achievement.objects.create(
+            title="KIHAJAR STEM 2023",
+            issuer="Kemendikbudristek",
+            description="Penghargaan atas proyek SIPELAN.",
+            level="national",
+            date_achieved="2023-10-01",
+        )
+
+    def _valid_payload(self, **overrides):
+        payload = {
+            "title": self.achievement.title,
+            "issuer": self.achievement.issuer,
+            "description": self.achievement.description,
+            "level": self.achievement.level,
+            "date_achieved": self.achievement.date_achieved,
+            "certificate_url": "",
+            "password": settings.ACHIEVEMENT_SECRET,
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_update_achievement_page_accessible_get(self):
+        response = self.client.get(
+            reverse("main:update_achievement", args=[self.achievement.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "achievement_form.html")
+
+    def test_update_form_prefilled_with_existing_data(self):
+        response = self.client.get(
+            reverse("main:update_achievement", args=[self.achievement.id])
+        )
+        self.assertContains(response, self.achievement.title)
+        self.assertContains(response, self.achievement.issuer)
+
+    def test_update_achievement_post_valid_correct_password(self):
+        response = self.client.post(
+            reverse("main:update_achievement", args=[self.achievement.id]),
+            self._valid_payload(title="Updated Title"),
+        )
+        self.achievement.refresh_from_db()
+        self.assertEqual(self.achievement.title, "Updated Title")
+        self.assertRedirects(response, reverse("main:show_achievement"))
+
+    def test_update_achievement_post_wrong_password(self):
+        response = self.client.post(
+            reverse("main:update_achievement", args=[self.achievement.id]),
+            self._valid_payload(title="Should Not Update", password="wrong-secret"),
+        )
+        self.achievement.refresh_from_db()
+        self.assertNotEqual(self.achievement.title, "Should Not Update")
+        self.assertEqual(response.status_code, 200)  # form dirender ulang, tidak redirect
+
+    def test_update_nonexistent_achievement_returns_404(self):
+        fake_id = uuid.uuid4()
+        response = self.client.get(
+            reverse("main:update_achievement", args=[fake_id])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_link_appears_on_achievement_page(self):
+        response = self.client.get(reverse("main:show_achievement"))
+        expected_url = reverse("main:update_achievement", args=[self.achievement.id])
+        self.assertContains(response, f'href="{expected_url}"')
