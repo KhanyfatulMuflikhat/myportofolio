@@ -57,8 +57,7 @@ def create_achievement(request):
             if input_password != settings.ACHIEVEMENT_SECRET:
                 messages.error(request, "Wrong password bos!")
             else:
-                achievement = form.save(commit=False)
-                achievement.save()
+                form.save()
                 messages.success(request, "New achievement succesfully added!!")
                 return redirect("main:show_achievement")
 
@@ -90,3 +89,25 @@ def delete_achievement(request, achievement_id):
             messages.success(request, "Achievement succesfully deleted!")
 
     return redirect("main:show_achievement")
+
+def update_achievement(request, achievement_id):
+    achievement = get_object_or_404(Achievement, pk=achievement_id)
+    form = AchievementForm(request.POST or None, instance=achievement)
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_password = form.cleaned_data.get("password")
+            if input_password != settings.ACHIEVEMENT_SECRET:
+                messages.error(request, "Wrong password bos!")
+            else:
+                form.save()
+                messages.success(request, "Achievement succesfully updated!!")
+                return redirect("main:show_achievement")
+
+    context = {
+        "name": PROFILE_NAME,
+        "form": form,
+        "achievement": achievement,
+        "mode": "edit",
+    }
+    return render(request, "achievement_form.html", context)
