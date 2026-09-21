@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-
+from django.conf import settings
 from main.models import Experience, Achievement
 
 
@@ -114,9 +114,23 @@ class AchievementFormTest(TestCase):
             "level": "school",
             "date_achieved": "2026-01-01",
             "certificate_url": "",
+            "password": settings.ACHIEVEMENT_SECRET,
         })
         self.assertEqual(Achievement.objects.count(), 1)
         self.assertRedirects(response, reverse("main:show_achievement"))
+
+    def test_create_achievement_post_wrong_password(self):
+        response = self.client.post(reverse("main:create_achievement"), {
+            "title": "Test Achievement",
+            "issuer": "Test Issuer",
+            "description": "Test desc",
+            "level": "school",
+            "date_achieved": "2026-01-01",
+            "certificate_url": "",
+            "password": "wrong-secret",
+        })
+        self.assertEqual(Achievement.objects.count(), 0)
+        self.assertEqual(response.status_code, 200)
 
     def test_json_endpoint_returns_valid_json(self):
         response = self.client.get(reverse("main:get_achievements_json"))
@@ -129,6 +143,18 @@ class AchievementFormTest(TestCase):
             level="school", date_achieved="2026-01-01",
         )
         response = self.client.post(
-            reverse("main:delete_achievement", args=[achievement.id])
+            reverse("main:delete_achievement", args=[achievement.id]),
+            {"password": settings.ACHIEVEMENT_SECRET},
         )
         self.assertEqual(Achievement.objects.count(), 0)
+
+    def test_delete_achievement_wrong_password(self):
+        achievement = Achievement.objects.create(
+            title="Not Deleted", issuer="X", description="Y",
+            level="school", date_achieved="2026-01-01",
+        )
+        response = self.client.post(
+            reverse("main:delete_achievement", args=[achievement.id]),
+            {"password": "wrong-secret"},
+        )
+        self.assertEqual(Achievement.objects.count(), 1)
