@@ -1,10 +1,9 @@
-from django.forms import ModelForm, TextInput, Textarea, URLInput, Select, DateInput
 from django import forms
 
 from main.models import Achievement
 
 
-class AchievementForm(ModelForm):
+class AchievementForm(forms.ModelForm):
 
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={"placeholder": "Masukkan kode rahasia"}),
@@ -33,29 +32,29 @@ class AchievementForm(ModelForm):
         }
 
         widgets = {
-            "title": TextInput(
+            "title": forms.TextInput(
                 attrs={
                     "placeholder": "Juara 1 Hackathon Nasional",
                     "maxlength": 255,
                 }
             ),
-            "issuer": TextInput(
+            "issuer": forms.TextInput(
                 attrs={
                     "placeholder": "Kementerian Pendidikan",
                     "maxlength": 255,
                 }
             ),
-            "description": Textarea(
+            "description": forms.Textarea(
                 attrs={
                     "placeholder": "Ceritakan pencapaianmu",
                     "rows": 3,
                 }
             ),
-            "level": Select(),
-            "date_achieved": DateInput(
+            "level": forms.Select(),
+            "date_achieved": forms.DateInput(
                 attrs={"type": "date"}
             ),
-            "certificate_url": URLInput(
+            "certificate_url": forms.URLInput(
                 attrs={
                     "placeholder": "https://drive.google.com/...",
                 }

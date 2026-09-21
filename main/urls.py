@@ -1,7 +1,10 @@
 from django.urls import path
 
-from main.views import show_main, show_experience, show_achievement, create_achievement, get_achievements_json, delete_achievement
-
+from main.views import (
+    show_main, show_experience, show_achievement,
+    create_achievement, update_achievement,
+    get_achievements_json, delete_achievement,
+)
 app_name = "main"
 
 urlpatterns = [
@@ -11,4 +14,5 @@ urlpatterns = [
     path("achievement/add/", create_achievement, name="create_achievement"),
     path("api/achievements/", get_achievements_json, name="get_achievements_json"),
     path("achievement/<uuid:achievement_id>/delete/", delete_achievement, name="delete_achievement"),
+    path("achievement/<uuid:achievement_id>/edit/", update_achievement, name="update_achievement"),
 ]

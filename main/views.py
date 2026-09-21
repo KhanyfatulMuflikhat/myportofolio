@@ -8,9 +8,11 @@ from main.models import Experience, Achievement
 from main.forms import AchievementForm
 from django.conf import settings
 
+PROFILE_NAME = "Khanyfatul Muflikhat"
+
 def show_main(request):
     context = {
-        "name": "Khanyfatul Muflikhat",
+        "name": PROFILE_NAME,
         "npm": "2506589755",
         "study_program": "S1 Ilmu Komputer",
         "bio": (
@@ -23,7 +25,7 @@ def show_main(request):
 
 def show_experience(request):
     context = {
-        "name": "Khanyfatul Muflikhat",
+        "name": PROFILE_NAME,
         "experience_list": Experience.objects.all(),
     }
     return render(request, "experience.html", context)
@@ -39,7 +41,7 @@ def show_achievement(request):
     selected_level = request.GET.get("level")
 
     context = {
-        "name": "Khanyfatul Muflikhat",
+        "name": PROFILE_NAME,
         "achievement_list": achievement_list,
         "level_choices": Achievement.LEVEL_CHOICES,
         "selected_level": selected_level,
@@ -53,15 +55,14 @@ def create_achievement(request):
         if form.is_valid():
             input_password = form.cleaned_data.get("password")
             if input_password != settings.ACHIEVEMENT_SECRET:
-                messages.error(request, "Wrong password🤷‍♂️!")
+                messages.error(request, "Wrong password bos!")
             else:
-                achievement = form.save(commit=False)
-                achievement.save()
+                form.save()
                 messages.success(request, "New achievement succesfully added!!")
                 return redirect("main:show_achievement")
 
     context = {
-        "name": "Khanyfatul Muflikhat",
+        "name": PROFILE_NAME,
         "form": form,
     }
     return render(request, "achievement_form.html", context)
@@ -88,3 +89,25 @@ def delete_achievement(request, achievement_id):
             messages.success(request, "Achievement succesfully deleted!")
 
     return redirect("main:show_achievement")
+
+def update_achievement(request, achievement_id):
+    achievement = get_object_or_404(Achievement, pk=achievement_id)
+    form = AchievementForm(request.POST or None, instance=achievement)
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_password = form.cleaned_data.get("password")
+            if input_password != settings.ACHIEVEMENT_SECRET:
+                messages.error(request, "Wrong password bos!")
+            else:
+                form.save()
+                messages.success(request, "Achievement succesfully updated!!")
+                return redirect("main:show_achievement")
+
+    context = {
+        "name": PROFILE_NAME,
+        "form": form,
+        "achievement": achievement,
+        "mode": "edit",
+    }
+    return render(request, "achievement_form.html", context)
