@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block meta %}
-    <title>Add Achievement - {{ name }}</title>
+    <title>{% if mode == "edit" %}Edit Achievement{% else %}Add Achievement{% endif %} - {{ name }}</title>
 {% endblock meta %}
 {% block content %}
     <main>
         <section class="experience-section">
             <div class="container">
-                <h1>Add New Achievement</h1>
+                <h1>{% if mode == "edit" %}Edit Achievement{% else %}Add New Achievement{% endif %}</h1>
                 <form method="post"
-                      action="{% url 'main:create_achievement' %}"
+                      action="{% if mode == 'edit' %}{% url 'main:update_achievement' achievement.id %}{% else %}{% url 'main:create_achievement' %}{% endif %}"
                       class="project-form">
                     {% csrf_token %}
                     {% for field in form %}
@@ -20,7 +20,9 @@
                             {% endfor %}
                         </div>
                     {% endfor %}
-                    <button type="submit" class="button">Tambah Pencapaian</button>
+                    <button type="submit" class="button">
+                        {% if mode == "edit" %}Simpan Perubahan{% else %}Tambah Pencapaian{% endif %}
+                    </button>
                     <a href="{% url 'main:show_achievement' %}" class="button button-secondary">Batal</a>
                 </form>
             </div>
