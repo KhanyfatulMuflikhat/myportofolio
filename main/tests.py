@@ -227,3 +227,25 @@ class AchievementUpdateTest(TestCase):
         response = self.client.get(reverse("main:show_achievement"))
         expected_url = reverse("main:update_achievement", args=[self.achievement.id])
         self.assertContains(response, f'href="{expected_url}"')
+
+class ExperienceViewTest(TestCase):
+    def setUp(self):
+        self.experience = Experience.objects.create(
+            title="Backend Intern",
+            description="Worked on API development",
+            category="internship",
+        )
+
+    def test_show_experience_uses_correct_template(self):
+        response = self.client.get(reverse("main:show_experience"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "experience.html")
+
+    def test_experience_data_appears_on_page(self):
+        response = self.client.get(reverse("main:show_experience"))
+        self.assertContains(response, "Backend Intern")
+
+    def test_empty_state_shown_when_no_experience(self):
+        Experience.objects.all().delete()
+        response = self.client.get(reverse("main:show_experience"))
+        self.assertContains(response, "Belum ada pengalaman yang ditambahkan.")
