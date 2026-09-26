@@ -1,12 +1,11 @@
-<p class="experience-status">
-    <button type="button"
-            class="button button-danger"
-            popovertarget="delete-achievement-{{ achievement.id }}"
-            aria-label="Delete {{ achievement.title }}"
-            title="Delete achievement">
-        Delete
-    </button>
-</p>
+<button type="button"
+        class="button button-danger delete-trigger"
+        popovertarget="delete-achievement-{{ achievement.id }}"
+        aria-label="Delete {{ achievement.title }}"
+        title="Delete achievement">
+    Delete
+</button>
+
 <div id="delete-achievement-{{ achievement.id }}"
     class="project-delete-modal"
     popover="auto"
