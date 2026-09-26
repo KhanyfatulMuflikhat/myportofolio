@@ -54,7 +54,7 @@ def create_achievement(request):
     if request.method == "POST":
         if form.is_valid():
             input_password = form.cleaned_data.get("password")
-            if input_password != settings.ACHIEVEMENT_SECRET:
+            if input_password != settings.PROJECT_SECRET:
                 messages.error(request, "Wrong password bos!")
             else:
                 form.save()
@@ -82,7 +82,7 @@ def delete_achievement(request, achievement_id):
 
     if request.method == "POST":
         input_password = request.POST.get("password", "")
-        if input_password != settings.ACHIEVEMENT_SECRET:
+        if input_password != settings.PROJECT_SECRET:
             messages.error(request, "Incorrect password, deletion canceled!")
         else:
             achievement.delete()
@@ -97,7 +97,7 @@ def update_achievement(request, achievement_id):
     if request.method == "POST":
         if form.is_valid():
             input_password = form.cleaned_data.get("password")
-            if input_password != settings.ACHIEVEMENT_SECRET:
+            if input_password != settings.PROJECT_SECRET:
                 messages.error(request, "Wrong password bos!")
             else:
                 form.save()
