@@ -1,7 +1,6 @@
 from django import forms
 
-from main.models import Achievement
-
+from main.models import Achievement, Experience
 
 class AchievementForm(forms.ModelForm):
 
@@ -58,5 +57,55 @@ class AchievementForm(forms.ModelForm):
                 attrs={
                     "placeholder": "https://drive.google.com/...",
                 }
+            ),
+        }
+
+class ExperienceForm(forms.ModelForm):
+
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"placeholder": "Masukkan kode rahasia"}),
+        label="Kode Rahasia",
+        required=True,
+    )
+
+    class Meta:
+        model = Experience
+        fields = [
+            "title",
+            "description",
+            "category",
+            "thumbnail",
+            "ended_at",
+        ]
+
+        labels = {
+            "title": "Judul",
+            "description": "Deskripsi",
+            "category": "Kategori",
+            "thumbnail": "URL Thumbnail",
+            "ended_at": "Tanggal Selesai",
+        }
+
+        widgets = {
+            "title": forms.TextInput(
+                attrs={
+                    "placeholder": "Software Engineer Intern",
+                    "maxlength": 255,
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "placeholder": "Ceritakan pengalamanmu",
+                    "rows": 3,
+                }
+            ),
+            "category": forms.Select(),
+            "thumbnail": forms.URLInput(
+                attrs={
+                    "placeholder": "https://...",
+                }
+            ),
+            "ended_at": forms.DateInput(
+                attrs={"type": "date"}
             ),
         }
