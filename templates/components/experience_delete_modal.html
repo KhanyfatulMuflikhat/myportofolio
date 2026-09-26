@@ -1,0 +1,50 @@
+<button type="button"
+        class="button button-danger delete-trigger"
+        popovertarget="delete-experience-{{ experience.id }}"
+        aria-label="Delete {{ experience.title }}"
+        title="Delete experience">
+    Delete
+</button>
+
+<div id="delete-experience-{{ experience.id }}"
+    class="project-delete-modal"
+    popover="auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-experience-title-{{ experience.id }}">
+    <button type="button"
+            class="project-delete-modal__backdrop"
+            popovertarget="delete-experience-{{ experience.id }}"
+            popovertargetaction="hide"
+            aria-label="Close delete confirmation"></button>
+    <div class="project-delete-modal__content">
+        <button type="button"
+                class="project-delete-modal__close"
+                popovertarget="delete-experience-{{ experience.id }}"
+                popovertargetaction="hide"
+                aria-label="Close delete confirmation">×</button>
+        <h2 id="delete-experience-title-{{ experience.id }}">Delete this experience?</h2>
+        <p>
+            Are you sure you want to delete
+            <strong>{{ experience.title }}</strong>?
+        </p>
+        <form method="post" action="{% url 'main:delete_experience' experience.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="delete-password-{{ experience.id }}">Secret Code</label>
+                <input type="password"
+                       name="password"
+                       id="delete-password-{{ experience.id }}"
+                       placeholder="Enter secret code"
+                       required>
+            </div>
+            <div class="project-delete-modal__actions">
+                <button type="button"
+                        class="button button-secondary"
+                        popovertarget="delete-experience-{{ experience.id }}"
+                        popovertargetaction="hide">Cancel</button>
+                <button type="submit" class="button button-danger">Yes, delete this</button>
+            </div>
+        </form>
+    </div>
+</div>
