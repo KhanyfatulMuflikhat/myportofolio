@@ -370,8 +370,14 @@ h1, .brand {
 }
 
 .project-card-actions {
-    margin-top: auto;
     padding-top: 1rem;
+}
+
+.project-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .project-card:hover {
@@ -479,6 +485,7 @@ h1, .brand {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1rem;
+    align-items: stretch;
 }
 
 .experience-card {
@@ -486,6 +493,8 @@ h1, .brand {
     background-color: #fff;
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
 }
 
 .experience-category {
@@ -493,6 +502,10 @@ h1, .brand {
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    display: inline-block;
+    align-self: flex-start;
 }
 
 .experience-card h2 {
@@ -506,7 +519,8 @@ h1, .brand {
 }
 
 .experience-status {
-    margin-top: 1rem;
+    margin-top: auto;
+    padding-top: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
 }
@@ -560,18 +574,20 @@ h1, .brand {
 }
 
 .achievement-date {
-    margin-top: 1rem;
+    margin-top: auto;
+    padding-top: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
 }
 
-/* filter achievement per kategori */
-.achievement-filter {
+/* filter achievement & experience per kategori */
+.achievement-filter,
+.experience-filter {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 1.0rem;
-    margin-bottom: 1.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1.0rem;
 }
 
 .filter-pill {
@@ -613,6 +629,31 @@ h1, .brand {
 .level-international {
     background-color: #fee2e2;
     color: #b91c1c;
+}
+
+.category-internship {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+.category-research {
+    background-color: #ede9fe;
+    color: #5b21b6;
+}
+.category-volunteer {
+    background-color: #dcfce7;
+    color: #166534;
+}
+.category-part-time {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+.category-full-time {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+.category-freelance {
+    background-color: #ffedd5;
+    color: #9a3412;
 }
 
 /* project form*/

@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from main.models import Experience, Achievement
-from main.forms import AchievementForm
+from main.forms import AchievementForm, ExperienceForm
 from django.conf import settings
 
 PROFILE_NAME = "Khanyfatul Muflikhat"
@@ -24,11 +24,90 @@ def show_main(request):
 
 
 def show_experience(request):
+    json_response = get_experiences_json(request)
+
+    experiences = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    experience_list = [e.object for e in experiences]
+    selected_category = request.GET.get("category")
+
     context = {
         "name": PROFILE_NAME,
-        "experience_list": Experience.objects.all(),
+        "experience_list": experience_list,
+        "category_choices": Experience.EXPERIENCE_CHOICES,
+        "selected_category": selected_category,
     }
     return render(request, "experience.html", context)
+
+
+def create_experience(request):
+    form = ExperienceForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_password = form.cleaned_data.get("password")
+            if input_password != settings.PROJECT_SECRET:
+                messages.error(request, "Wrong password bos!")
+            else:
+                form.save()
+                messages.success(request, "New experience succesfully added!!")
+                return redirect("main:show_experience")
+
+    context = {
+        "name": PROFILE_NAME,
+        "form": form,
+    }
+    return render(request, "experience_form.html", context)
+
+
+def update_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    form = ExperienceForm(request.POST or None, instance=experience)
+
+    if request.method == "POST":
+        if form.is_valid():
+            input_password = form.cleaned_data.get("password")
+            if input_password != settings.PROJECT_SECRET:
+                messages.error(request, "Wrong password bos!")
+            else:
+                form.save()
+                messages.success(request, "Experience succesfully updated!!")
+                return redirect("main:show_experience")
+
+    context = {
+        "name": PROFILE_NAME,
+        "form": form,
+        "experience": experience,
+        "mode": "edit",
+    }
+    return render(request, "experience_form.html", context)
+
+
+def get_experiences_json(request):
+    category_query = request.GET.get("category", "").strip()
+    experiences = Experience.objects.all()
+
+    if category_query:
+        experiences = experiences.filter(category=category_query)
+
+    experiences_json = serializers.serialize("json", experiences)
+    return HttpResponse(experiences_json, content_type="application/json")
+
+
+def delete_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    if request.method == "POST":
+        input_password = request.POST.get("password", "")
+        if input_password != settings.PROJECT_SECRET:
+            messages.error(request, "Incorrect password, deletion canceled!")
+        else:
+            experience.delete()
+            messages.success(request, "Experience succesfully deleted!")
+
+    return redirect("main:show_experience")
 
 def show_achievement(request):
     json_response = get_achievements_json(request)
