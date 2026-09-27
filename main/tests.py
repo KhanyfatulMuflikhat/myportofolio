@@ -116,7 +116,7 @@ class AchievementFormTest(TestCase):
             "level": "school",
             "date_achieved": "2026-01-01",
             "certificate_url": "",
-            "password": settings.ACHIEVEMENT_SECRET,
+            "password": settings.PROJECT_SECRET,
         })
         self.assertEqual(Achievement.objects.count(), 1)
         self.assertRedirects(response, reverse("main:show_achievement"))
@@ -146,7 +146,7 @@ class AchievementFormTest(TestCase):
         )
         response = self.client.post(
             reverse("main:delete_achievement", args=[achievement.id]),
-            {"password": settings.ACHIEVEMENT_SECRET},
+            {"password": settings.PROJECT_SECRET},
         )
         self.assertEqual(Achievement.objects.count(), 0)
 
@@ -179,7 +179,7 @@ class AchievementUpdateTest(TestCase):
             "level": self.achievement.level,
             "date_achieved": self.achievement.date_achieved,
             "certificate_url": "",
-            "password": settings.ACHIEVEMENT_SECRET,
+            "password": settings.PROJECT_SECRET,
         }
         payload.update(overrides)
         return payload
