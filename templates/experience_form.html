@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block meta %}
-    <title>{% if mode == "edit" %}Edit Experience{% else %}Add Experience{% endif %} - {{ name }}</title>
-{% endblock meta %}
+{% block title %}
+    {% if mode == "edit" %}Edit Experience{% else %}Add Experience{% endif %} - {{ name }}
+{% endblock title %}
 {% block content %}
     <main>
         <section class="experience-section">
