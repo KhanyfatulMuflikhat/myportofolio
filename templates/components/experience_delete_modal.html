@@ -30,14 +30,6 @@
         </p>
         <form method="post" action="{% url 'main:delete_experience' experience.id %}">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="delete-password-{{ experience.id }}">Secret Code</label>
-                <input type="password"
-                       name="password"
-                       id="delete-password-{{ experience.id }}"
-                       placeholder="Enter secret code"
-                       required>
-            </div>
             <div class="project-delete-modal__actions">
                 <button type="button"
                         class="button button-secondary"
