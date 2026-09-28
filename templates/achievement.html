@@ -39,11 +39,13 @@
                             </p>
                             <p class="achievement-date">{{ achievement.date_achieved }}</p>
                             {% include "components/achievement_star.html" with achievement=achievement %}
-                            {% if user.is_superuser %}
+                            {% if perms.main.change_achievement %}
                                 <div class="project-card-actions">
                                     <div class="project-actions">
                                         <a href="{% url 'main:update_achievement' achievement.id %}" class="button button-secondary">Edit</a>
-                                        {% include "components/achievement_delete_modal.html" with achievement=achievement %}
+                                        {% if user.is_superuser %}
+                                            {% include "components/achievement_delete_modal.html" with achievement=achievement %}
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}
