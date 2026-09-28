@@ -6,6 +6,8 @@ from main.views import (
     get_achievements_json, delete_achievement,
     create_experience, update_experience,
     delete_experience, get_experiences_json,
+    register, login_user, logout_user,
+    toggle_star_achievement, toggle_star_experience,
 )
 app_name = "main"
 
@@ -21,4 +23,9 @@ urlpatterns = [
     path("achievement/<uuid:achievement_id>/edit/", update_achievement, name="update_achievement"),
     path("api/achievements/", get_achievements_json, name="get_achievements_json"),
     path("achievement/<uuid:achievement_id>/delete/", delete_achievement, name="delete_achievement"),
+    path("register/", register, name="register"),
+    path("login/", login_user, name="login"),
+    path("logout/", logout_user, name="logout"),
+    path("achievements/<uuid:achievement_id>/star/", toggle_star_achievement, name="toggle_star_achievement"),
+    path("experiences/<uuid:experience_id>/star/", toggle_star_experience, name="toggle_star_experience"),
 ]
