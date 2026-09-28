@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
 
 from main.models import Experience, Achievement
@@ -69,9 +69,8 @@ def create_experience(request):
 
 
 @login_required(login_url="/login/")
+@permission_required("main.change_achievement", raise_exception=True)
 def update_experience(request, experience_id):
-    if not request.user.is_superuser:
-        raise PermissionDenied
 
     experience = get_object_or_404(Experience, pk=experience_id)
     form = ExperienceForm(request.POST or None, instance=experience)
@@ -156,9 +155,8 @@ def create_achievement(request):
 
 
 @login_required(login_url="/login/")
+@permission_required("main.change_achievement", raise_exception=True)
 def update_achievement(request, achievement_id):
-    if not request.user.is_superuser:
-        raise PermissionDenied
 
     achievement = get_object_or_404(Achievement, pk=achievement_id)
     form = AchievementForm(request.POST or None, instance=achievement)
