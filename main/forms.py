@@ -4,12 +4,6 @@ from main.models import Achievement, Experience
 
 class AchievementForm(forms.ModelForm):
 
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Masukkan kode rahasia"}),
-        label="Kode Rahasia",
-        required=True,
-    )
-
     class Meta:
         model = Achievement
         fields = [
@@ -61,12 +55,6 @@ class AchievementForm(forms.ModelForm):
         }
 
 class ExperienceForm(forms.ModelForm):
-
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"placeholder": "Masukkan kode rahasia"}),
-        label="Kode Rahasia",
-        required=True,
-    )
 
     class Meta:
         model = Experience
