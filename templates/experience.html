@@ -15,58 +15,20 @@
                     {% endif %}
                 </div>
 
-                <div class="experience-filter">
-                    <a href="{% url 'main:show_experience' %}"
-                       class="filter-pill {% if not selected_category %}active{% endif %}">
-                        All
-                    </a>
+                <div class="experience-filter" id="category-filter">
+                    <a href="?" data-category="" class="filter-pill {% if not selected_category %}active{% endif %}">All</a>
                     {% for value, label in category_choices %}
-                        <a href="{% url 'main:show_experience' %}?category={{ value }}"
-                           class="filter-pill {% if selected_category == value %}active{% endif %}">
+                        <a href="?category={{ value }}" data-category="{{ value }}"
+                        class="filter-pill {% if selected_category == value %}active{% endif %}">
                             {{ label }}
                         </a>
                     {% endfor %}
                 </div>
 
-                <div class="experience-grid">
-                    {% for experience in experience_list %}
-                        <article class="experience-card">
-                            <span class="experience-category category-{{ experience.category }}">
-                                {{ experience.get_category_display }}
-                            </span>
-                            <h2>{{ experience.title }}</h2>
-                            <p class="experience-description">
-                                {{ experience.description }}
-                            </p>
-
-                            {% if experience.is_ongoing %}
-                                <p class="experience-status">Sedang berlangsung</p>
-                            {% else %}
-                                <p class="experience-status">Selesai</p>
-                            {% endif %}
-
-                            {% include "components/experience_star.html" with experience=experience %}
-                            {% if user.is_superuser %}
-                                <div class="project-card-actions">
-                                    <div class="project-actions">
-                                        <a href="{% url 'main:update_experience' experience.id %}" class="button button-secondary">Edit</a>
-                                        {% include "components/experience_delete_modal.html" with experience=experience %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        {% if selected_category %}
-                            <p class="empty-state">
-                                Belum ada pengalaman pada kategori ini.
-                            </p>
-                        {% else %}
-                            <p class="empty-state">
-                                Belum ada pengalaman yang ditambahkan.
-                            </p>
-                        {% endif %}
-                    {% endfor %}
-                </div>
+                <div id="loading" class="empty-state hide"><p>Memuat experiences...</p></div>
+                <div id="error" class="empty-state hide"><p>Gagal memuat data experience. Silakan coba lagi.</p></div>
+                <div id="empty" class="empty-state hide"><p>Belum ada pengalaman yang ditambahkan.</p></div>
+                <div id="grid" class="experience-grid hide"></div>
             </div>
         </section>
     </main>
