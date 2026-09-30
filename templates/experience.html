@@ -47,6 +47,10 @@ const EXPERIENCES_ENDPOINT = "{% url 'main:get_experiences_json' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
 const CAN_EDIT = "{{ perms.main.change_experience|yesno:'true,false' }}" === "true";
 let experiencesAbortController;
+const searchInput = document.getElementById('search-input');
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
+let activeCategory = "";
 
 const loadingState = document.getElementById('loading');
 const errorState = document.getElementById('error');
@@ -117,14 +121,18 @@ function buildExperienceCardElement(item) {
     return articleElement;
 }
 
-async function fetchExperiences(category = "") {
+async function fetchExperiences(category = "", query = "") {
     if (experiencesAbortController) experiencesAbortController.abort();
     experiencesAbortController = new AbortController();
 
     try {
         displayPageSection({ showLoading: true });
 
-        const url = category ? `${EXPERIENCES_ENDPOINT}?category=${encodeURIComponent(category)}` : EXPERIENCES_ENDPOINT;
+        const params = new URLSearchParams();
+        if (category) params.set('category', category);
+        if (query) params.set('q', query);
+        const url = params.toString() ? `${EXPERIENCES_ENDPOINT}?${params}` : EXPERIENCES_ENDPOINT;
+
         const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
             signal: experiencesAbortController.signal,
@@ -148,6 +156,15 @@ async function fetchExperiences(category = "") {
     }
 }
 
+function searchExperiences() {
+    fetchExperiences(activeCategory, searchInput.value.trim());
+}
+
+searchInput.addEventListener("input", function () {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(searchExperiences, SEARCH_DEBOUNCE_DELAY);
+});
+
 filterContainer.addEventListener('click', function (e) {
     const pill = e.target.closest('a[data-category]');
     if (!pill) return;
@@ -156,10 +173,12 @@ filterContainer.addEventListener('click', function (e) {
     filterContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
 
-    fetchExperiences(pill.dataset.category);
+    activeCategory = pill.dataset.category;
+    fetchExperiences(activeCategory, searchInput.value.trim());
 });
 
 const initialCategory = new URLSearchParams(window.location.search).get('category') || "";
+activeCategory = initialCategory;
 fetchExperiences(initialCategory);
 </script>
 {% endblock content %}
