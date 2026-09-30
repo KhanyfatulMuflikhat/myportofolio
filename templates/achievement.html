@@ -14,55 +14,29 @@
                         </a>
                     {% endif %}
                 </div>
-                <div class="achievement-filter">
-                    <a href="{% url 'main:show_achievement' %}"
-                    class="filter-pill {% if not selected_level %}active{% endif %}">
-                        All
-                    </a>
+
+                <div class="achievement-filter" id="level-filter">
+                    <a href="?" data-level="" class="filter-pill {% if not selected_level %}active{% endif %}">All</a>
                     {% for value, label in level_choices %}
-                        <a href="{% url 'main:show_achievement' %}?level={{ value }}"
+                        <a href="?level={{ value }}" data-level="{{ value }}"
                         class="filter-pill {% if selected_level == value %}active{% endif %}">
                             {{ label }}
                         </a>
                     {% endfor %}
                 </div>
-                <div class="achievement-grid">
-                    {% for achievement in achievement_list %}
-                        <article class="achievement-card">
-                            <span class="achievement-level level-{{ achievement.level }}">
-                                {{ achievement.get_level_display }}
-                            </span>
-                            <h2>{{ achievement.title }}</h2>
-                            <p class="achievement-issuer">{{ achievement.issuer }}</p>
-                            <p class="achievement-description">
-                                {{ achievement.description }}
-                            </p>
-                            <p class="achievement-date">{{ achievement.date_achieved }}</p>
-                            {% include "components/achievement_star.html" with achievement=achievement %}
-                            {% if user.is_superuser %}
-                                <div class="project-card-actions">
-                                    <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Achievement berhasil dimuat!', 'success')">
-                                        Test Toast Notifikasi
-                                    </button>
-                                    <div class="project-actions">
-                                        <a href="{% url 'main:update_achievement' achievement.id %}" class="button button-secondary">Edit</a>
-                                        {% include "components/achievement_delete_modal.html" with achievement=achievement %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        {% if selected_level %}
-                            <p class="empty-state">
-                                Belum ada penghargaan pada kategori ini.
-                            </p>
-                        {% else %}
-                            <p class="empty-state">
-                                Belum ada penghargaan yang ditambahkan.
-                            </p>
-                        {% endif %}
-                    {% endfor %}
-                </div>
+
+                <!-- Loading State -->
+                <div id="loading" class="empty-state hide"><p>Memuat achievements...</p></div>
+
+                <!-- Error State -->
+                <div id="error" class="empty-state hide"><p>Gagal memuat data achievement. Silakan coba lagi.</p></div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide"><p>Belum ada penghargaan yang ditambahkan.</p></div>
+
+                <!-- Achievement Grid -->
+                <div id="grid" class="achievement-grid hide"></div>
+
             </div>
         </section>
     </main>
