@@ -172,6 +172,15 @@ searchInput.addEventListener("input", function () {
     searchDebounceTimer = setTimeout(searchAchievements, SEARCH_DEBOUNCE_DELAY);
 });
 
+function searchAchievements() {
+    fetchAchievements(activeLevel, searchInput.value.trim());
+}
+
+searchInput.addEventListener("input", function () {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(searchAchievements, SEARCH_DEBOUNCE_DELAY);
+});
+
 filterContainer.addEventListener('click', function (e) {
     const pill = e.target.closest('a[data-level]');
     if (!pill) return;
@@ -180,10 +189,12 @@ filterContainer.addEventListener('click', function (e) {
     filterContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
     pill.classList.add('active');
 
-    fetchAchievements(pill.dataset.level);
+    activeLevel = pill.dataset.level;
+    fetchAchievements(activeLevel, searchInput.value.trim());
 });
 
 const initialLevel = new URLSearchParams(window.location.search).get('level') || "";
+activeLevel = initialLevel;
 fetchAchievements(initialLevel);
 </script>
 {% endblock content %}
