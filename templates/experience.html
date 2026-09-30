@@ -8,10 +8,10 @@
                 <div class="project-header">
                     <h1>Experience</h1>
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_experience' %}" class="button project-add-button">
+                        <button type="button" class="button project-add-button" popovertarget="add-experience-modal">
                             <span aria-hidden="true">+</span>
-                            Add Experience
-                        </a>
+                            Tambah Experience
+                        </button>
                     {% endif %}
                 </div>
 

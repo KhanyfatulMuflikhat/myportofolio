@@ -8,10 +8,10 @@
                 <div class="project-header">
                     <h1>Achievements</h1>
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_achievement' %}" class="button project-add-button">
+                        <button type="button" class="button project-add-button" popovertarget="add-achievement-modal">
                             <span aria-hidden="true">+</span>
-                            Add Achievement
-                        </a>
+                            Tambah Achievement
+                        </button>
                     {% endif %}
                 </div>
 
