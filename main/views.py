@@ -39,9 +39,9 @@ def show_experience(request):
         "name": PROFILE_NAME,
         "category_choices": Experience.EXPERIENCE_CHOICES,
         "selected_category": selected_category,
+        "form": ExperienceForm(),
     }
     return render(request, "experience.html", context)
-
 
 @login_required(login_url="/login/")
 def create_experience(request):
@@ -143,9 +143,9 @@ def show_achievement(request):
         "name": PROFILE_NAME,
         "level_choices": Achievement.LEVEL_CHOICES,
         "selected_level": selected_level,
+        "form": AchievementForm(),
     }
     return render(request, "achievement.html", context)
-
 
 @login_required(login_url="/login/")
 def create_achievement(request):
