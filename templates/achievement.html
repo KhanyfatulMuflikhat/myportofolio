@@ -15,6 +15,15 @@
                     {% endif %}
                 </div>
 
+                <div class="project-search">
+                    <input type="search"
+                        id="search-input"
+                        name="q"
+                        placeholder="Cari berdasarkan judul atau penyelenggara"
+                        class="project-search__input"
+                        aria-label="Cari achievement">
+                </div>
+
                 <div class="achievement-filter" id="level-filter">
                     <a href="?" data-level="" class="filter-pill {% if not selected_level %}active{% endif %}">All</a>
                     {% for value, label in level_choices %}
@@ -52,6 +61,10 @@ const errorState = document.getElementById('error');
 const emptyState = document.getElementById('empty');
 const gridContainer = document.getElementById('grid');
 const filterContainer = document.getElementById('level-filter');
+const searchInput = document.getElementById('search-input');
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
+let activeLevel = "";
 
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
     loadingState.classList.toggle('hide', !showLoading);
@@ -115,14 +128,18 @@ function buildAchievementCardElement(item) {
     return articleElement;
 }
 
-async function fetchAchievements(level = "") {
+async function fetchAchievements(level = "", query = "") {
     if (achievementsAbortController) achievementsAbortController.abort();
     achievementsAbortController = new AbortController();
 
     try {
         displayPageSection({ showLoading: true });
 
-        const url = level ? `${ACHIEVEMENTS_ENDPOINT}?level=${encodeURIComponent(level)}` : ACHIEVEMENTS_ENDPOINT;
+        const params = new URLSearchParams();
+        if (level) params.set('level', level);
+        if (query) params.set('q', query);
+        const url = params.toString() ? `${ACHIEVEMENTS_ENDPOINT}?${params}` : ACHIEVEMENTS_ENDPOINT;
+
         const response = await fetch(url, {
             headers: { 'Accept': 'application/json' },
             signal: achievementsAbortController.signal,
@@ -145,6 +162,15 @@ async function fetchAchievements(level = "") {
         displayPageSection({ showError: true });
     }
 }
+
+function searchAchievements() {
+    fetchAchievements(activeLevel, searchInput.value.trim());
+}
+
+searchInput.addEventListener("input", function () {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(searchAchievements, SEARCH_DEBOUNCE_DELAY);
+});
 
 filterContainer.addEventListener('click', function (e) {
     const pill = e.target.closest('a[data-level]');
