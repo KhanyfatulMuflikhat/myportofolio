@@ -1,12 +1,15 @@
 import datetime
 from django.contrib import messages
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import JsonResponse 
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
 from main.models import Experience, Achievement
 from main.forms import AchievementForm, ExperienceForm
@@ -32,23 +35,15 @@ def show_main(request):
 # Experience
 
 def show_experience(request):
-    json_response = get_experiences_json(request)
-
-    experiences = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    experience_list = [e.object for e in experiences]
     selected_category = request.GET.get("category")
 
     context = {
         "name": PROFILE_NAME,
-        "experience_list": experience_list,
         "category_choices": Experience.EXPERIENCE_CHOICES,
         "selected_category": selected_category,
+        "form": ExperienceForm(),
     }
     return render(request, "experience.html", context)
-
 
 @login_required(login_url="/login/")
 def create_experience(request):
@@ -91,15 +86,40 @@ def update_experience(request, experience_id):
 
 def get_experiences_json(request):
     category_query = request.GET.get("category", "").strip()
-    experiences = Experience.objects.all()
+    search_query = request.GET.get("q", "").strip()
+    experiences = Experience.objects.prefetch_related("starred_by").all()
 
     if category_query:
         experiences = experiences.filter(category=category_query)
 
-    experiences_json = serializers.serialize(
-           "json", experiences, use_natural_foreign_keys=True
-    )
-    return HttpResponse(experiences_json, content_type="application/json")
+    if search_query:
+        experiences = experiences.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )    
+    data = []
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join(u.username for u in starred_users)
+
+        data.append({
+            "pk": str(experience.id),
+            "fields": {
+                "title": experience.title,
+                "description": experience.description,
+                "category": experience.category,
+                "category_display": experience.get_category_display(),
+                "thumbnail": experience.thumbnail,
+                "started_at": experience.started_at.isoformat() if experience.started_at else None,
+                "ended_at": experience.ended_at.isoformat() if experience.ended_at else None,
+                "is_ongoing": experience.is_ongoing,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 @login_required(login_url="/login/")
@@ -118,23 +138,15 @@ def delete_experience(request, experience_id):
 # Achievement
 
 def show_achievement(request):
-    json_response = get_achievements_json(request)
-
-    achievements = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    achievement_list = [a.object for a in achievements]
     selected_level = request.GET.get("level")
 
     context = {
         "name": PROFILE_NAME,
-        "achievement_list": achievement_list,
         "level_choices": Achievement.LEVEL_CHOICES,
         "selected_level": selected_level,
+        "form": AchievementForm(),
     }
     return render(request, "achievement.html", context)
-
 
 @login_required(login_url="/login/")
 def create_achievement(request):
@@ -177,16 +189,40 @@ def update_achievement(request, achievement_id):
 
 def get_achievements_json(request):
     level_query = request.GET.get("level", "").strip()
-    achievements = Achievement.objects.all()
+    search_query = request.GET.get("q", "").strip()
+    achievements = Achievement.objects.prefetch_related("starred_by").all()
 
     if level_query:
         achievements = achievements.filter(level=level_query)
 
-       # di get_achievements_json
-    achievements_json = serializers.serialize(
-       "json", achievements, use_natural_foreign_keys=True
-    )
-    return HttpResponse(achievements_json, content_type="application/json")
+    if search_query:
+        achievements = achievements.filter(
+            Q(title__icontains=search_query) | Q(issuer__icontains=search_query)
+        )
+
+    data = []
+    for achievement in achievements:
+        starred_users = achievement.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join(u.username for u in starred_users)
+
+        data.append({
+            "pk": str(achievement.id),
+            "fields": {
+                "title": achievement.title,
+                "issuer": achievement.issuer,
+                "description": achievement.description,
+                "level": achievement.level,
+                "level_display": achievement.get_level_display(),
+                "date_achieved": achievement.date_achieved.isoformat() if achievement.date_achieved else None,
+                "certificate_url": achievement.certificate_url,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 @login_required(login_url="/login/")
@@ -266,3 +302,40 @@ def toggle_star_experience(request, experience_id):
             experience.starred_by.add(request.user)
 
     return redirect("main:show_experience")
+
+@require_POST
+def create_achievement_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan achievement."},
+            status=403,
+        )
+
+    form = AchievementForm(request.POST)
+    if form.is_valid():
+        achievement = form.save()
+        return JsonResponse(
+            {"message": "Achievement berhasil ditambahkan.", "pk": str(achievement.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan experience."},
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save()
+        return JsonResponse(
+            {"message": "Experience berhasil ditambahkan.", "pk": str(experience.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)

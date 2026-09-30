@@ -8,68 +8,248 @@
                 <div class="project-header">
                     <h1>Experience</h1>
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_experience' %}" class="button project-add-button">
+                        <button type="button" class="button project-add-button" popovertarget="add-experience-modal">
                             <span aria-hidden="true">+</span>
-                            Add Experience
-                        </a>
+                            Tambah Experience
+                        </button>
                     {% endif %}
                 </div>
 
-                <div class="experience-filter">
-                    <a href="{% url 'main:show_experience' %}"
-                       class="filter-pill {% if not selected_category %}active{% endif %}">
-                        All
-                    </a>
+                <div class="project-search">
+                    <input type="search"
+                        id="search-input"
+                        name="q"
+                        placeholder="Cari berdasarkan judul"
+                        class="project-search__input"
+                        aria-label="Cari experience">
+                </div>
+
+                <div class="experience-filter" id="category-filter">
+                    <a href="?" data-category="" class="filter-pill {% if not selected_category %}active{% endif %}">All</a>
                     {% for value, label in category_choices %}
-                        <a href="{% url 'main:show_experience' %}?category={{ value }}"
-                           class="filter-pill {% if selected_category == value %}active{% endif %}">
+                        <a href="?category={{ value }}" data-category="{{ value }}"
+                        class="filter-pill {% if selected_category == value %}active{% endif %}">
                             {{ label }}
                         </a>
                     {% endfor %}
                 </div>
 
-                <div class="experience-grid">
-                    {% for experience in experience_list %}
-                        <article class="experience-card">
-                            <span class="experience-category category-{{ experience.category }}">
-                                {{ experience.get_category_display }}
-                            </span>
-                            <h2>{{ experience.title }}</h2>
-                            <p class="experience-description">
-                                {{ experience.description }}
-                            </p>
-
-                            {% if experience.is_ongoing %}
-                                <p class="experience-status">Sedang berlangsung</p>
-                            {% else %}
-                                <p class="experience-status">Selesai</p>
-                            {% endif %}
-
-                            {% include "components/experience_star.html" with experience=experience %}
-                            {% if perms.main.change_experience %}
-                                <div class="project-card-actions">
-                                    <div class="project-actions">
-                                        <a href="{% url 'main:update_experience' experience.id %}" class="button button-secondary">Edit</a>
-                                        {% if user.is_superuser %}
-                                            {% include "components/experience_delete_modal.html" with experience=experience %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        {% if selected_category %}
-                            <p class="empty-state">
-                                Belum ada pengalaman pada kategori ini.
-                            </p>
-                        {% else %}
-                            <p class="empty-state">
-                                Belum ada pengalaman yang ditambahkan.
-                            </p>
-                        {% endif %}
-                    {% endfor %}
-                </div>
+                <div id="loading" class="empty-state hide"><p>Memuat experiences...</p></div>
+                <div id="error" class="empty-state hide"><p>Gagal memuat data experience. Silakan coba lagi.</p></div>
+                <div id="empty" class="empty-state hide"><p>Belum ada pengalaman yang ditambahkan.</p></div>
+                <div id="grid" class="experience-grid hide"></div>
             </div>
         </section>
     </main>
+
+    {% if user.is_superuser %}
+        {% include "components/experience_form_modal.html" %}
+    {% endif %}
+
+<script>
+const EXPERIENCES_ENDPOINT = "{% url 'main:get_experiences_json' %}";
+const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+const CAN_EDIT = "{{ perms.main.change_experience|yesno:'true,false' }}" === "true";
+let experiencesAbortController;
+const searchInput = document.getElementById('search-input');
+const SEARCH_DEBOUNCE_DELAY = 300;
+let searchDebounceTimer;
+let activeCategory = "";
+
+const loadingState = document.getElementById('loading');
+const errorState = document.getElementById('error');
+const emptyState = document.getElementById('empty');
+const gridContainer = document.getElementById('grid');
+const filterContainer = document.getElementById('category-filter');
+
+function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+    loadingState.classList.toggle('hide', !showLoading);
+    errorState.classList.toggle('hide', !showError);
+    emptyState.classList.toggle('hide', !showEmpty);
+    gridContainer.classList.toggle('hide', !showGrid);
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function buildExperienceCardElement(item) {
+    const experience = item.fields;
+    const experienceId = item.pk;
+
+    const articleElement = document.createElement('article');
+    articleElement.className = 'experience-card';
+
+    const deleteUrl = "{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', experienceId);
+    const editUrl = "{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', experienceId);
+    const starUrl = "{% url 'main:toggle_star_experience' '00000000-0000-0000-0000-000000000000' %}"
+        .replace('00000000-0000-0000-0000-000000000000', experienceId);
+
+    const editHtml = CAN_EDIT
+        ? `<a href="${editUrl}" class="button button-secondary">Edit</a>`
+        : '';
+
+    const deleteHtml = IS_SUPERUSER
+        ? `<form method="post" action="${deleteUrl}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus experience ini?');">Hapus</button>
+        </form>`
+        : '';
+
+    const isStarredClass = experience.is_starred ? " is-starred" : "";
+    const starText = experience.is_starred ? "Unstar" : "Star";
+    const starTitle = experience.star_count > 0
+        ? `Dibintangi oleh ${escapeHtml(experience.starred_by_names)}`
+        : "Jadilah yang pertama memberi star";
+
+    const statusText = experience.is_ongoing ? "Sedang berlangsung" : "Selesai";
+
+    articleElement.innerHTML = `
+        <span class="experience-category category-${escapeHtml(experience.category)}">${escapeHtml(experience.category_display)}</span>
+        <h2>${escapeHtml(experience.title)}</h2>
+        <p class="experience-description">${escapeHtml(experience.description)}</p>
+        <p class="experience-status">${statusText}</p>
+        <div class="project-card-actions">
+            <div class="project-actions">
+                <form method="post" action="${starUrl}" class="star-form">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
+                        <span aria-hidden="true">★</span>
+                        ${starText}
+                        <span class="star-count">${experience.star_count}</span>
+                    </button>
+                </form>
+                ${editHtml}
+                ${deleteHtml}
+            </div>
+        </div>
+    `;
+    return articleElement;
+}
+async function fetchExperiences(category = "", query = "") {
+    if (experiencesAbortController) experiencesAbortController.abort();
+    experiencesAbortController = new AbortController();
+
+    try {
+        displayPageSection({ showLoading: true });
+
+        const params = new URLSearchParams();
+        if (category) params.set('category', category);
+        if (query) params.set('q', query);
+        const url = params.toString() ? `${EXPERIENCES_ENDPOINT}?${params}` : EXPERIENCES_ENDPOINT;
+
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' },
+            signal: experiencesAbortController.signal,
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch data');
+
+        const experienceData = await response.json();
+
+        if (experienceData.length === 0) {
+            displayPageSection({ showEmpty: true });
+        } else {
+            gridContainer.innerHTML = '';
+            experienceData.forEach(item => gridContainer.appendChild(buildExperienceCardElement(item)));
+            displayPageSection({ showGrid: true });
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('Error loading experiences:', error);
+        displayPageSection({ showError: true });
+    }
+}
+
+function searchExperiences() {
+    fetchExperiences(activeCategory, searchInput.value.trim());
+}
+
+searchInput.addEventListener("input", function () {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(searchExperiences, SEARCH_DEBOUNCE_DELAY);
+});
+
+filterContainer.addEventListener('click', function (e) {
+    const pill = e.target.closest('a[data-category]');
+    if (!pill) return;
+    e.preventDefault();
+
+    filterContainer.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+
+    activeCategory = pill.dataset.category;
+    fetchExperiences(activeCategory, searchInput.value.trim());
+});
+
+const initialCategory = new URLSearchParams(window.location.search).get('category') || "";
+activeCategory = initialCategory;
+function closeExperienceModal() {
+    document.getElementById("add-experience-modal").hidePopover();
+}
+
+const CREATE_EXPERIENCE_ENDPOINT = "{% url 'main:create_experience_ajax' %}";
+const experienceForm = document.getElementById('experience-form');
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+async function addExperience(event) {
+    event.preventDefault();
+
+    const submitButton = experienceForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    try {
+        const response = await fetch(CREATE_EXPERIENCE_ENDPOINT, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: new FormData(experienceForm),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            experienceForm.reset();
+            closeExperienceModal();
+            showToast('Berhasil', 'Experience baru berhasil ditambahkan!', 'success');
+            fetchExperiences(activeCategory, searchInput.value.trim());
+        } else {
+            const errorMessages = result.errors
+                ? Object.values(result.errors).flat().map(error => error.message)
+                : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+            showToast('Gagal menambahkan experience', errorMessages.join(' '), 'error');
+        }
+    } catch (error) {
+        console.error('Error adding experience:', error);
+        showToast('Gagal menambahkan experience', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+if (experienceForm) {
+    experienceForm.addEventListener('submit', addExperience);
+}
+
+fetchExperiences(initialCategory);
+</script>
 {% endblock content %}
