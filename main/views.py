@@ -1,7 +1,7 @@
 import datetime
 from django.contrib import messages
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import JsonResponse 
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -92,15 +92,34 @@ def update_experience(request, experience_id):
 
 def get_experiences_json(request):
     category_query = request.GET.get("category", "").strip()
-    experiences = Experience.objects.all()
+    experiences = Experience.objects.prefetch_related("starred_by").all()
 
     if category_query:
         experiences = experiences.filter(category=category_query)
+    data = []
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join(u.username for u in starred_users)
 
-    experiences_json = serializers.serialize(
-           "json", experiences, use_natural_foreign_keys=True
-    )
-    return HttpResponse(experiences_json, content_type="application/json")
+        data.append({
+            "pk": str(experience.id),
+            "fields": {
+                "title": experience.title,
+                "description": experience.description,
+                "category": experience.category,
+                "category_display": experience.get_category_display(),
+                "thumbnail": experience.thumbnail,
+                "started_at": experience.started_at.isoformat() if experience.started_at else None,
+                "ended_at": experience.ended_at.isoformat() if experience.ended_at else None,
+                "is_ongoing": experience.is_ongoing,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 @login_required(login_url="/login/")
@@ -179,16 +198,34 @@ def update_achievement(request, achievement_id):
 
 def get_achievements_json(request):
     level_query = request.GET.get("level", "").strip()
-    achievements = Achievement.objects.all()
+    achievements = Achievement.objects.prefetch_related("starred_by").all()
 
     if level_query:
         achievements = achievements.filter(level=level_query)
 
-       # di get_achievements_json
-    achievements_json = serializers.serialize(
-       "json", achievements, use_natural_foreign_keys=True
-    )
-    return HttpResponse(achievements_json, content_type="application/json")
+    data = []
+    for achievement in achievements:
+        starred_users = achievement.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join(u.username for u in starred_users)
+
+        data.append({
+            "pk": str(achievement.id),
+            "fields": {
+                "title": achievement.title,
+                "issuer": achievement.issuer,
+                "description": achievement.description,
+                "level": achievement.level,
+                "level_display": achievement.get_level_display(),
+                "date_achieved": achievement.date_achieved.isoformat() if achievement.date_achieved else None,
+                "certificate_url": achievement.certificate_url,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 @login_required(login_url="/login/")
