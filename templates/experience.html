@@ -42,6 +42,10 @@
         </section>
     </main>
 
+    {% if user.is_superuser %}
+        {% include "components/experience_form_modal.html" %}
+    {% endif %}
+
 <script>
 const EXPERIENCES_ENDPOINT = "{% url 'main:get_experiences_json' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
@@ -179,6 +183,9 @@ filterContainer.addEventListener('click', function (e) {
 
 const initialCategory = new URLSearchParams(window.location.search).get('category') || "";
 activeCategory = initialCategory;
+function closeExperienceModal() {
+    document.getElementById("add-experience-modal").hidePopover();
+}
 fetchExperiences(initialCategory);
 </script>
 {% endblock content %}

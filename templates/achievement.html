@@ -50,6 +50,10 @@
         </section>
     </main>
 
+    {% if user.is_superuser %}
+        {% include "components/achievement_form_modal.html" %}
+    {% endif %}
+
 <script>
 const ACHIEVEMENTS_ENDPOINT = "{% url 'main:get_achievements_json' %}";
 const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
@@ -195,6 +199,9 @@ filterContainer.addEventListener('click', function (e) {
 
 const initialLevel = new URLSearchParams(window.location.search).get('level') || "";
 activeLevel = initialLevel;
+function closeAchievementModal() {
+    document.getElementById("add-achievement-modal").hidePopover();
+}
 fetchAchievements(initialLevel);
 </script>
 {% endblock content %}
