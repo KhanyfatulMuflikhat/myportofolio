@@ -41,6 +41,9 @@
                             {% include "components/achievement_star.html" with achievement=achievement %}
                             {% if user.is_superuser %}
                                 <div class="project-card-actions">
+                                    <button class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Achievement berhasil dimuat!', 'success')">
+                                        Test Toast Notifikasi
+                                    </button>
                                     <div class="project-actions">
                                         <a href="{% url 'main:update_achievement' achievement.id %}" class="button button-secondary">Edit</a>
                                         {% include "components/achievement_delete_modal.html" with achievement=achievement %}
