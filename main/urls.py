@@ -8,6 +8,7 @@ from main.views import (
     delete_experience, get_experiences_json,
     register, login_user, logout_user,
     toggle_star_achievement, toggle_star_experience,
+    create_achievement_ajax, create_experience_ajax,
 )
 app_name = "main"
 
@@ -28,4 +29,6 @@ urlpatterns = [
     path("logout/", logout_user, name="logout"),
     path("achievements/<uuid:achievement_id>/star/", toggle_star_achievement, name="toggle_star_achievement"),
     path("experiences/<uuid:experience_id>/star/", toggle_star_experience, name="toggle_star_experience"),
+    path("achievements/add-ajax/", create_achievement_ajax, name="create_achievement_ajax"),
+    path("experiences/add-ajax/", create_experience_ajax, name="create_experience_ajax"),
 ]
