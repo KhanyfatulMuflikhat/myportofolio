@@ -77,6 +77,15 @@ function displayPageSection({ showLoading = false, showError = false, showEmpty 
     gridContainer.classList.toggle('hide', !showGrid);
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
 function buildAchievementCardElement(item) {
     const achievement = item.fields;
     const achievementId = item.pk;
@@ -105,15 +114,15 @@ function buildAchievementCardElement(item) {
     const isStarredClass = achievement.is_starred ? " is-starred" : "";
     const starText = achievement.is_starred ? "Unstar" : "Star";
     const starTitle = achievement.star_count > 0
-        ? `Dibintangi oleh ${achievement.starred_by_names}`
+        ? `Dibintangi oleh ${escapeHtml(achievement.starred_by_names)}`
         : "Jadilah yang pertama memberi star";
 
     articleElement.innerHTML = `
-        <span class="achievement-level level-${achievement.level}">${achievement.level_display}</span>
-        <h2>${achievement.title}</h2>
-        <p class="achievement-issuer">${achievement.issuer}</p>
-        <p class="achievement-description">${achievement.description}</p>
-        <p class="achievement-date">${achievement.date_achieved ?? ''}</p>
+        <span class="achievement-level level-${escapeHtml(achievement.level)}">${escapeHtml(achievement.level_display)}</span>
+        <h2>${escapeHtml(achievement.title)}</h2>
+        <p class="achievement-issuer">${escapeHtml(achievement.issuer)}</p>
+        <p class="achievement-description">${escapeHtml(achievement.description)}</p>
+        <p class="achievement-date">${escapeHtml(achievement.date_achieved)}</p>
         <div class="project-card-actions">
             <div class="project-actions">
                 <form method="post" action="${starUrl}" class="star-form">
