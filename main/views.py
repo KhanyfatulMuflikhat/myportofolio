@@ -32,18 +32,10 @@ def show_main(request):
 # Experience
 
 def show_experience(request):
-    json_response = get_experiences_json(request)
-
-    experiences = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    experience_list = [e.object for e in experiences]
     selected_category = request.GET.get("category")
 
     context = {
         "name": PROFILE_NAME,
-        "experience_list": experience_list,
         "category_choices": Experience.EXPERIENCE_CHOICES,
         "selected_category": selected_category,
     }
@@ -138,18 +130,10 @@ def delete_experience(request, experience_id):
 # Achievement
 
 def show_achievement(request):
-    json_response = get_achievements_json(request)
-
-    achievements = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    achievement_list = [a.object for a in achievements]
     selected_level = request.GET.get("level")
 
     context = {
         "name": PROFILE_NAME,
-        "achievement_list": achievement_list,
         "level_choices": Achievement.LEVEL_CHOICES,
         "selected_level": selected_level,
     }
