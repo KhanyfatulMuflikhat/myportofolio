@@ -7,6 +7,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 
 from main.models import Experience, Achievement
 from main.forms import AchievementForm, ExperienceForm
@@ -84,10 +85,16 @@ def update_experience(request, experience_id):
 
 def get_experiences_json(request):
     category_query = request.GET.get("category", "").strip()
+    search_query = request.GET.get("q", "").strip()
     experiences = Experience.objects.prefetch_related("starred_by").all()
 
     if category_query:
         experiences = experiences.filter(category=category_query)
+
+    if search_query:
+        experiences = experiences.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )    
     data = []
     for experience in experiences:
         starred_users = experience.starred_by.all()
@@ -182,10 +189,16 @@ def update_achievement(request, achievement_id):
 
 def get_achievements_json(request):
     level_query = request.GET.get("level", "").strip()
+    search_query = request.GET.get("q", "").strip()
     achievements = Achievement.objects.prefetch_related("starred_by").all()
 
     if level_query:
         achievements = achievements.filter(level=level_query)
+
+    if search_query:
+        achievements = achievements.filter(
+            Q(title__icontains=search_query) | Q(issuer__icontains=search_query)
+        )
 
     data = []
     for achievement in achievements:
