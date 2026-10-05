@@ -580,6 +580,13 @@ h1, .brand {
     font-weight: 600;
 }
 
+/* exper date */
+.experience-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0.25rem 0;
+}
+
 /* filter achievement & experience per kategori */
 .achievement-filter,
 .experience-filter {
