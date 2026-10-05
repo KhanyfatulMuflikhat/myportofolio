@@ -15,9 +15,13 @@ Website ini menampilkan profil "About Me" beserta section tambahan: **Skills**, 
 - Section Skills
 - Section Education — riwayat pendidikan dengan pencapaian di tiap institusi
 - Section Projects
-- Section Experience — daftar pengalaman (internship/research/volunteer/part-time/full-time/freelance) dengan filter berdasarkan kategori, serta Create, Update, dan Delete data yang dilindungi kode rahasia (`EXPERIENCE_SECRET`)
-- Section Achievement — daftar pencapaian dengan filter berdasarkan level (school/regional/national/international), serta Create, Update, dan Delete data yang dilindungi kode rahasia (`ACHIEVEMENT_SECRET`)
-- Seluruh data Experience dan Achievement tersedia dalam format JSON melalui endpoint `api/experiences/` dan `api/achievements/`, dan halaman tampilan (`show_experience`, `show_achievement`) memuat data dengan mengambil JSON tersebut lalu melakukan deserialisasi
+- Section Experience — daftar pengalaman dengan filter berdasarkan kategori, serta Create, Update, dan Delete data yang dibatasi berdasarkan peran pengguna
+- Section Achievement — daftar pencapaian dengan filter berdasarkan level (school/regional/national/international), serta Create, Update, dan Delete data yang dibatasi berdasarkan peran pengguna
+- Autentikasi menggunakan sistem bawaan Django: registrasi (`/register/`), login (`/login/`), dan logout (`/logout/`), dengan status login ditampilkan di navbar
+- Cookie kustom `last_login` yang mencatat waktu login terakhir dan ditampilkan di halaman Profile, lalu dihapus saat logout
+- Otorisasi berbasis peran (pengunjung, pengguna biasa, Editor, pemilik portofolio) yang dicek di sisi server, dan tombol aksi disembunyikan di template bagi pengguna yang tidak berhak
+- Fitur star pada Experience dan Achievement: pengguna yang sudah login dapat memberi atau membatalkan star (maksimal satu per pengguna), dengan jumlah total star dan status pengguna ditampilkan di tiap kartu
+- Seluruh data Experience dan Achievement tersedia dalam format JSON melalui endpoint `api/experiences/` dan `api/achievements/` (field `starred_by` menampilkan username, bukan `id` internal database), dan halaman tampilan (`show_experience`, `show_achievement`) memuat data dengan mengambil JSON tersebut lalu melakukan deserialisasi
 - Notifikasi aksi (tambah/ubah/hapus/gagal) ditampilkan sebagai toast popup
 
 ## Tech Stack
@@ -25,7 +29,6 @@ Website ini menampilkan profil "About Me" beserta section tambahan: **Skills**, 
 - Django (backend server, routing, ORM, form handling)
 - HTML5 (struktur semantik, template inheritance dengan `base.html`)
 - CSS3 murni (grid, flexbox, custom properties, media query)
-- python-dotenv (menyimpan kode rahasia di luar version control)
 
 ## Cara Menjalankan Proyek
 
@@ -55,23 +58,43 @@ Website ini menampilkan profil "About Me" beserta section tambahan: **Skills**, 
    pip install -r requirements.txt
 ```
 
-4. Buat berkas `.env` di root project dan isi kode rahasia untuk fitur Achievement dan Experience:
-```bash
-   ACHIEVEMENT_SECRET=kode_rahasia_achievement
-   EXPERIENCE_SECRET=kode_rahasia_experience
-```
-
-5. Jalankan migrasi database:
+4. Jalankan migrasi database:
 ```bash
    python manage.py migrate
 ```
 
-6. Jalankan development server:
+5. Buat akun pemilik portofolio (superuser):
+```bash
+   python manage.py createsuperuser
+```
+
+6. Buat peran Editor. Data grup tersimpan di database, bukan di kode, jadi langkah ini perlu dilakukan di setiap database baru:
+   - Login sebagai superuser, lalu buka `http://127.0.0.1:8000/admin/` => **Groups** => **Add group**
+   - Beri nama `Editor`
+   - Pindahkan permission `main | achievement | Can change achievement` dan `main | experience | Can change experience` ke kolom *Chosen*, lalu simpan
+   - Daftarkan akun biasa lewat `/register/`, lalu di Admin => **Users** buka akun tersebut dan tambahkan ke grup `Editor` (jangan centang *Staff status* maupun *Superuser*)
+
+7. Jalankan development server:
 ```bash
    python manage.py runserver
 ```
 
-7. Buka browser dan akses `http://127.0.0.1:8000/`
+8. Buka browser dan akses `http://127.0.0.1:8000/`
+
+## Hak Akses Pengguna
+
+| Peran | Melihat data | Memberi star | Mengubah data | Membuat / menghapus data |
+|---|---|---|---|---|
+| Pengunjung (belum login) | Ya | Tidak (dialihkan ke login) | Tidak (dialihkan ke login) | Tidak (dialihkan ke login) |
+| Pengguna biasa | Ya | Ya | Tidak (403) | Tidak (403) |
+| Editor | Ya | Ya | Ya | Tidak (403) |
+| Pemilik portofolio (superuser) | Ya | Ya | Ya | Ya |
+
+Implementasi:
+- Peran Editor dibuat lewat Django `Group` bernama `Editor` yang memiliki permission `change_achievement` dan `change_experience`. View update dilindungi `@login_required` dan `@permission_required(..., raise_exception=True)`; superuser otomatis lolos karena memiliki semua permission.
+- View create dan delete dilindungi `@login_required` dan pengecekan `request.user.is_superuser` yang melempar `PermissionDenied` (HTTP 403).
+- View `toggle_star_achievement` dan `toggle_star_experience` hanya memerlukan login dan hanya memproses request `POST` dengan `{% csrf_token %}`.
+- Di template, tombol Add hanya tampil untuk superuser, tombol Edit untuk pengguna dengan permission `change_*` (`perms`), tombol Delete hanya untuk superuser. Ini hanya mengatur tampilan; pembatasan sebenarnya tetap ada di view.
 
 
 ## Pertanyaan Reflektif
@@ -188,3 +211,27 @@ Untuk Tugas 3, saya menggunakan AI terutama untuk dua hal: (1) menyusun breakdow
 
 **Refleksi kritis terhadap keterbatasan AI:**
 Karena Tugas 3 melibatkan replikasi pola dari Achievement ke Experience, saya menyadari AI cenderung menghasilkan kode berdasarkan pola yang terlihat konsisten di permukaan, tapi tetap bisa meleset kalau saya tidak membagikan kode asli secara lengkap. Misalnya saran awal sebelum saya upload `views.py`/`urls.py` masih menggunakan asumsi nama parameter (`id`) yang ternyata berbeda dengan konvensi yang sudah saya pakai (`achievement_id`). Ini menegaskan bahwa AI sangat bergantung pada konteks yang saya berikan, dan tanggung jawab untuk memverifikasi kesesuaian saran dengan kode nyata tetap ada di tangan saya. Selain itu, catatan "Hal-Hal yang Harus Hati-Hati" yang saya tulis sendiri di awal proses (migration di PWS, konsistensi nama context variable, testing di tiap checkpoint, branch `master` tidak boleh langsung dikembangkan) justru menjadi acuan yang saya gunakan untuk mengevaluasi apakah breakdown dari AI sudah menjawab risiko-risiko tersebut atau belum — bukan sebaliknya. Ini menunjukkan bahwa refleksi dan pengalaman saya sendiri dari tahap sebelumnya penting untuk menilai kualitas saran AI, bukan menerima breakdown tersebut begitu saja.
+
+### Tugas 4
+
+**Tools yang digunakan:** Claude Sonnet 5 (Anthropic)
+
+**Strategi prompting:**
+Saya membagikan teks tutorial dan kode asli saya (`views.py`, template, `base.html`, dan `README.md`) ke AI, lalu meminta perbandingan antara contoh di tutorial (yang memakai model `Project`) dengan struktur proyek saya (model `Achievement` dan `Experience`) sebelum menulis kode. Setelah itu saya meminta breakdown pengerjaan dan pesan commit per file untuk Tutorial 4 dan Individual Assignment 4.
+
+**Bagian yang dibantu AI:**
+- Memetakan pola tutorial (`@login_required`, `is_superuser`, `ManyToManyField`, `toggle_star`) dari `Project` ke `Achievement` dan `Experience`
+- Review `views.py` yang menemukan bahwa `update_experience` belum dikunci, serta review `base.html` yang menemukan bahwa `{% block meta %}` di halaman form, login, dan register menghasilkan `<title>` ganda
+- Usulan implementasi peran Editor lewat `Group` dan `Permission` beserta breakdown pengerjaan dan pesan commit
+- Penjelasan mengapa login lewat `/admin/` tidak membuat cookie `last_login`
+
+**Bagian yang dikerjakan manual:**
+- Penulisan dan penerapan seluruh kode ke file proyek, serta keputusan mengganti `PROJECT_SECRET` dengan otorisasi berbasis akun
+- Pembuatan grup Editor dan akun uji di Django Admin
+- Pengujian manual untuk keempat peran di browser
+- Seluruh proses Git di terminal
+
+**Refleksi kritis terhadap keterbatasan AI:**
+AI awalnya memakai contoh dari tutorial secara langsung, padahal struktur proyek saya berbeda (dua model, dan proteksi `PROJECT_SECRET` yang sudah ada), sehingga saya harus memutuskan sendiri apakah proteksi lama diganti atau digabung. AI juga tidak bisa melihat kondisi environment saya: kasus cookie `last_login` yang tidak muncul baru terjawab setelah saya melaporkan bahwa saya login lewat `/admin/`, dan kekurangan di `update_experience` baru ketahuan setelah saya membagikan `views.py` yang sebenarnya. Ini menegaskan bahwa saran AI harus diverifikasi terhadap kode dan perilaku aplikasi nyata.
+
+**Log Chat:** 
