@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
 
 class Experience(models.Model):
@@ -17,7 +18,7 @@ class Experience(models.Model):
     description = models.TextField()
     category = models.CharField(max_length=20, choices=EXPERIENCE_CHOICES, default='full-time')
     thumbnail = models.URLField(blank=True, null=True)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateField(default=timezone.now)
     ended_at = models.DateTimeField(blank=True, null=True)
     starred_by = models.ManyToManyField(
         User, related_name="starred_experiences", blank=True
