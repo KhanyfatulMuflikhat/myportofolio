@@ -77,6 +77,7 @@ class ExperienceForm(forms.ModelForm):
             "description",
             "category",
             "thumbnail",
+            "started_at",
             "ended_at",
         ]
 
@@ -85,6 +86,7 @@ class ExperienceForm(forms.ModelForm):
             "description": "Deskripsi",
             "category": "Kategori",
             "thumbnail": "URL Thumbnail",
+            "started_at": "Tanggal Mulai",
             "ended_at": "Tanggal Selesai",
         }
 
@@ -107,6 +109,9 @@ class ExperienceForm(forms.ModelForm):
                     "placeholder": "https://...",
                 }
             ),
+            "started_at": forms.DateInput(
+                attrs={"type": "date"}
+                ),
             "ended_at": forms.DateInput(
                 attrs={"type": "date"}
             ),
