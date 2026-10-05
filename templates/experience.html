@@ -22,6 +22,9 @@
                         placeholder="Cari berdasarkan judul"
                         class="project-search__input"
                         aria-label="Cari experience">
+                    <button type="button" id="sort-toggle" class="button button-secondary">
+                        Urutkan: Terbaru
+                    </button>
                 </div>
 
                 <div class="experience-filter" id="category-filter">
@@ -55,6 +58,7 @@ const searchInput = document.getElementById('search-input');
 const SEARCH_DEBOUNCE_DELAY = 300;
 let searchDebounceTimer;
 let activeCategory = "";
+let lastFetchedData = [];
 
 const loadingState = document.getElementById('loading');
 const errorState = document.getElementById('error');
@@ -67,6 +71,21 @@ function displayPageSection({ showLoading = false, showError = false, showEmpty 
     errorState.classList.toggle('hide', !showError);
     emptyState.classList.toggle('hide', !showEmpty);
     gridContainer.classList.toggle('hide', !showGrid);
+}
+
+function renderGrid(data) {
+    if (data.length === 0) {
+        displayPageSection({ showEmpty: true });
+        return;
+    }
+
+    const sorted = sortByStars
+        ? [...data].sort((a, b) => b.fields.star_count - a.fields.star_count)
+        : data;
+
+    gridContainer.innerHTML = '';
+    sorted.forEach(item => gridContainer.appendChild(buildExperienceCardElement(item)));
+    displayPageSection({ showGrid: true });
 }
 
 function buildExperienceCardElement(item) {
@@ -148,14 +167,8 @@ async function fetchExperiences(category = "", query = "") {
         if (!response.ok) throw new Error('Failed to fetch data');
 
         const experienceData = await response.json();
-
-        if (experienceData.length === 0) {
-            displayPageSection({ showEmpty: true });
-        } else {
-            gridContainer.innerHTML = '';
-            experienceData.forEach(item => gridContainer.appendChild(buildExperienceCardElement(item)));
-            displayPageSection({ showGrid: true });
-        }
+        lastFetchedData = experienceData;
+        renderGrid(experienceData);
     } catch (error) {
         if (error.name === 'AbortError') return;
         console.error('Error loading experiences:', error);
@@ -170,6 +183,15 @@ function searchExperiences() {
 searchInput.addEventListener("input", function () {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(searchExperiences, SEARCH_DEBOUNCE_DELAY);
+});
+
+const sortToggle = document.getElementById('sort-toggle');
+let sortByStars = false;
+
+sortToggle.addEventListener('click', function () {
+    sortByStars = !sortByStars;
+    sortToggle.textContent = sortByStars ? 'Urutkan: Star' : 'Urutkan: Terbaru';
+    renderGrid(lastFetchedData);
 });
 
 filterContainer.addEventListener('click', function (e) {
