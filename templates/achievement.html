@@ -22,6 +22,9 @@
                         placeholder="Cari berdasarkan judul atau penyelenggara"
                         class="project-search__input"
                         aria-label="Cari achievement">
+                    <button type="button" id="sort-toggle" class="button button-secondary">
+                        Urutkan: Terbaru
+                    </button>
                 </div>
 
                 <div class="achievement-filter" id="level-filter">
@@ -69,12 +72,28 @@ const searchInput = document.getElementById('search-input');
 const SEARCH_DEBOUNCE_DELAY = 300;
 let searchDebounceTimer;
 let activeLevel = "";
+let lastFetchedData = [];
 
 function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
     loadingState.classList.toggle('hide', !showLoading);
     errorState.classList.toggle('hide', !showError);
     emptyState.classList.toggle('hide', !showEmpty);
     gridContainer.classList.toggle('hide', !showGrid);
+}
+
+function renderGrid(data) {
+    if (data.length === 0) {
+        displayPageSection({ showEmpty: true });
+        return;
+    }
+
+    const sorted = sortByStars
+        ? [...data].sort((a, b) => b.fields.star_count - a.fields.star_count)
+        : data;
+
+    gridContainer.innerHTML = '';
+    sorted.forEach(item => gridContainer.appendChild(buildAchievementCardElement(item)));
+    displayPageSection({ showGrid: true });
 }
 
 function buildAchievementCardElement(item) {
@@ -152,14 +171,8 @@ async function fetchAchievements(level = "", query = "") {
         if (!response.ok) throw new Error('Failed to fetch data');
 
         const achievementData = await response.json();
-
-        if (achievementData.length === 0) {
-            displayPageSection({ showEmpty: true });
-        } else {
-            gridContainer.innerHTML = '';
-            achievementData.forEach(item => gridContainer.appendChild(buildAchievementCardElement(item)));
-            displayPageSection({ showGrid: true });
-        }
+        lastFetchedData = achievementData;
+        renderGrid(achievementData);
     } catch (error) {
         if (error.name === 'AbortError') return;
         console.error('Error loading achievements:', error);
@@ -176,13 +189,13 @@ searchInput.addEventListener("input", function () {
     searchDebounceTimer = setTimeout(searchAchievements, SEARCH_DEBOUNCE_DELAY);
 });
 
-function searchAchievements() {
-    fetchAchievements(activeLevel, searchInput.value.trim());
-}
+const sortToggle = document.getElementById('sort-toggle');
+let sortByStars = false;
 
-searchInput.addEventListener("input", function () {
-    clearTimeout(searchDebounceTimer);
-    searchDebounceTimer = setTimeout(searchAchievements, SEARCH_DEBOUNCE_DELAY);
+sortToggle.addEventListener('click', function () {
+    sortByStars = !sortByStars;
+    sortToggle.textContent = sortByStars ? 'Urutkan: Star' : 'Urutkan: Terbaru';
+    renderGrid(lastFetchedData);
 });
 
 filterContainer.addEventListener('click', function (e) {
