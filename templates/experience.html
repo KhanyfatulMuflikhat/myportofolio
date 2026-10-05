@@ -110,11 +110,15 @@ function buildExperienceCardElement(item) {
         : "Jadilah yang pertama memberi star";
 
     const statusText = experience.is_ongoing ? "Sedang berlangsung" : "Selesai";
+    const dateRangeText = experience.ended_at
+        ? `${escapeHtml(experience.started_at)} – ${escapeHtml(experience.ended_at)}`
+        : `${escapeHtml(experience.started_at)} – Sekarang`;
 
     articleElement.innerHTML = `
         <span class="experience-category category-${escapeHtml(experience.category)}">${escapeHtml(experience.category_display)}</span>
         <h2>${escapeHtml(experience.title)}</h2>
         <p class="experience-description">${escapeHtml(experience.description)}</p>
+        <p class="experience-date">${dateRangeText}</p>
         <p class="experience-status">${statusText}</p>
         <div class="project-card-actions">
             <div class="project-actions">
