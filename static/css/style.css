@@ -580,6 +580,13 @@ h1, .brand {
     font-weight: 600;
 }
 
+/* exper date */
+.experience-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0.25rem 0;
+}
+
 /* filter achievement & experience per kategori */
 .achievement-filter,
 .experience-filter {
@@ -588,6 +595,31 @@ h1, .brand {
     gap: 0.5rem;
     margin-top: 0.5rem;
     margin-bottom: 1.0rem;
+}
+
+.project-search {
+    margin-bottom: 1.5rem;
+}
+
+.project-search__input {
+    width: 100%;
+    max-width: 320px;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: inherit;
+}
+
+.project-search__input::placeholder {
+    color: var(--text-muted);
+}
+
+.project-search__input:focus {
+    outline: none;
+    border-color: var(--accent);
 }
 
 .filter-pill {
