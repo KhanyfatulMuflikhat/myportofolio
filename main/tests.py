@@ -237,3 +237,12 @@ class ExperienceViewTest(TestCase):
         Experience.objects.all().delete()
         response = self.client.get(reverse("main:show_experience"))
         self.assertContains(response, "Belum ada pengalaman yang ditambahkan.")
+
+    def test_edit_button_enabled_for_editor_only(self):
+        editor = User.objects.create_user("exp_editor", password="pw-test")
+        editor.user_permissions.add(Permission.objects.get(codename="change_experience"))
+        regular = User.objects.create_user("exp_regular", password="pw-test")
+        self.client.force_login(editor)
+        self.assertContains(self.client.get(reverse("main:show_experience")), 'const CAN_EDIT = "true" === "true"')
+        self.client.force_login(regular)
+        self.assertContains(self.client.get(reverse("main:show_experience")), 'const CAN_EDIT = "false" === "true"')

@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from main.models import Achievement
+from main.models import Achievement, Experience
 
 
 class AchievementAPITest(APITestCase):
@@ -115,6 +115,8 @@ class AchievementAPITest(APITestCase):
         self.client.force_authenticate(user=self.editor)
         response = self.client.patch(self.detail_url, {"title": "Edited"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.achievement.refresh_from_db()
+        self.assertEqual(self.achievement.title, "Edited")
         self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, 403)
         self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
         self.assertEqual(Achievement.objects.count(), 1)
@@ -147,3 +149,119 @@ class AchievementAPITest(APITestCase):
             self.list_url, self.payload, format="json", HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class ExperienceAPITest(APITestCase):
+    def setUp(self):
+        self.owner = User.objects.create_superuser("owner2", "o2@example.com", "test-password")
+        self.visitor = User.objects.create_user("visitor2", password="test-password")
+        self.editor = User.objects.create_user("editor2", password="test-password")
+        self.editor.user_permissions.add(Permission.objects.get(codename="change_experience"))
+        self.experience = Experience.objects.create(
+            title="Backend Intern", description="API work", category="internship",
+            started_at="2025-01-01",
+        )
+        self.list_url = reverse("api:experience-list")
+        self.detail_url = reverse("api:experience-detail", args=[self.experience.id])
+        self.star_url = reverse("api:experience-star", args=[self.experience.id])
+        self.payload = {
+            "title": "New exp", "description": "Desc", "category": "research",
+            "thumbnail": "https://example.com/x.png",
+            "started_at": "2025-02-01", "ended_at": None,
+        }
+
+    def test_public_read_search_and_missing(self):
+        self.assertEqual(self.client.get(self.list_url).status_code, 200)
+        self.assertEqual(len(self.client.get(self.list_url, {"q": "BACKEND"}).data), 1)
+        self.assertEqual(self.client.get(self.list_url, {"category": "research"}).data, [])
+        self.assertTrue(self.client.get(self.list_url).data[0]["is_ongoing"])
+        url = reverse("api:experience-detail", args=[uuid.uuid4()])
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_guest_and_visitor_cannot_write(self):
+        for user in (None, self.visitor):
+            self.client.force_authenticate(user=user)
+            self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, 403)
+            self.assertEqual(self.client.patch(self.detail_url, {"title": "X"}, format="json").status_code, 403)
+            self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
+        self.assertEqual(Experience.objects.count(), 1)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, "Backend Intern")
+
+    def test_editor_can_patch_only(self):
+        self.client.force_authenticate(user=self.editor)
+        self.assertEqual(self.client.patch(self.detail_url, {"title": "Edited"}, format="json").status_code, 200)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, "Edited")
+        self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, 403)
+        self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
+        self.assertEqual(Experience.objects.count(), 1)
+
+    def test_owner_can_create_and_delete(self):
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(self.list_url, self.payload, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Experience.objects.count(), 2)
+        self.assertEqual(self.client.delete(self.detail_url).status_code, 204)
+        self.assertEqual(Experience.objects.count(), 1)
+
+    def test_validation(self):
+        self.client.force_authenticate(user=self.owner)
+        for changes, field in [
+            ({"title": "   "}, "title"),
+            ({"title": '<img src=x onerror=alert(1)>'}, "title"),
+            ({"thumbnail": "javascript:alert(1)"}, "thumbnail"),
+            ({"started_at": "2025-05-01", "ended_at": "2025-01-01"}, "ended_at"),
+        ]:
+            response = self.client.post(self.list_url, {**self.payload, **changes}, format="json")
+            self.assertEqual(response.status_code, 400)
+            self.assertIn(field, response.data)
+        self.assertEqual(Experience.objects.count(), 1)
+
+    def test_star_toggle_and_guest_rejected(self):
+        self.assertEqual(self.client.post(self.star_url).status_code, 403)
+        self.client.force_authenticate(user=self.visitor)
+        self.assertTrue(self.client.post(self.star_url).data["is_starred"])
+        response = self.client.post(self.star_url)
+        self.assertFalse(response.data["is_starred"])
+        self.assertEqual(response.data["star_count"], 0)
+
+    def test_session_write_without_csrf_is_rejected(self):
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(client.login(username="owner2", password="test-password"))
+        response = client.post(self.list_url, self.payload, format="json")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Experience.objects.count(), 1)
+    def test_put_requires_full_payload(self):
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(self.client.put(self.detail_url, {"title": "Incomplete"}, format="json").status_code, 400)
+        self.assertEqual(self.client.put(self.detail_url, self.payload, format="json").status_code, 200)
+
+    def test_computed_fields_are_read_only(self):
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(self.list_url, {
+            **self.payload, "star_count": 99, "is_starred": True,
+            "starred_by_names": "forged", "is_ongoing": False,
+        }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["star_count"], 0)
+        self.assertFalse(response.data["is_starred"])
+        self.assertTrue(response.data["is_ongoing"])
+
+    def test_staff_without_permission_cannot_edit(self):
+        self.visitor.is_staff = True
+        self.visitor.save()
+        self.client.force_authenticate(user=self.visitor)
+        self.assertEqual(self.client.patch(self.detail_url, {"title": "X"}, format="json").status_code, 403)
+
+    def test_wrong_method(self):
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(self.client.delete(self.list_url).status_code, 405)
+
+    def test_session_write_with_csrf_succeeds(self):
+        client = APIClient(enforce_csrf_checks=True)
+        client.login(username="owner2", password="test-password")
+        client.get(self.list_url, HTTP_ACCEPT="text/html")
+        token = client.cookies["csrftoken"].value
+        response = client.post(self.list_url, self.payload, format="json", HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(response.status_code, 201)
