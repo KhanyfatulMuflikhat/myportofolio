@@ -9,7 +9,9 @@ class IsPortfolioOwnerOrReadOnly(BasePermission):
 
 
 class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
+    """Read: everyone. PUT/PATCH: owner or holder of `edit_permission`. POST/DELETE: owner only."""
     message = "You do not have permission to perform this action."
+    edit_permission = None
 
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
@@ -19,7 +21,12 @@ class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
             return False
         if user.is_superuser:
             return True
-        return (
-            request.method in ("PUT", "PATCH")
-            and user.has_perm("main.change_achievement")
-        )
+        return request.method in ("PUT", "PATCH") and user.has_perm(self.edit_permission)
+
+
+class AchievementPermission(IsPortfolioOwnerOrEditorOrReadOnly):
+    edit_permission = "main.change_achievement"
+
+
+class ExperiencePermission(IsPortfolioOwnerOrEditorOrReadOnly):
+    edit_permission = "main.change_experience"
