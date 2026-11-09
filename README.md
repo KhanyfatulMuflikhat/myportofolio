@@ -6,102 +6,187 @@ Kelas : PBP A
 
 Website portofolio pribadi berbasis Django, dibuat untuk memenuhi Tutorial dan Individual Assignment mata kuliah Pemrograman Berbasis Platform (PBP) Fakultas Ilmu Komputer, Universitas Indonesia.
 
+- Repository: https://github.com/KhanyfatulMuflikhat/myportofolio
+- Deployment (PWS): https://pws.cs.ui.ac.id/web/project/khanyfatul.muflikhat/myportofolio
+
 ## Deskripsi Proyek
 
-Website ini menampilkan profil "About Me" beserta section tambahan: **Skills**, **Education**, **Projects**, **Experience**, dan **Achievements**.
+Website ini menampilkan profil "About Me" beserta section **Skills**, **Education**, **Projects**, **Experience**, dan **Achievements**. Experience dan Achievement adalah modul dinamis penuh (database, AJAX, REST API, hak akses berbasis peran); sisanya masih halaman statis/template.
 
-**Fitur yang tersedia:**
-- Section Profile — data diri, bio, dan tautan sosial media
-- Section Skills
-- Section Education — riwayat pendidikan dengan pencapaian di tiap institusi
-- Section Projects
-- Section Experience — daftar pengalaman dengan filter berdasarkan kategori, serta Create, Update, dan Delete data yang dibatasi berdasarkan peran pengguna
-- Section Achievement — daftar pencapaian dengan filter berdasarkan level (school/regional/national/international), serta Create, Update, dan Delete data yang dibatasi berdasarkan peran pengguna
-- Autentikasi menggunakan sistem bawaan Django: registrasi (`/register/`), login (`/login/`), dan logout (`/logout/`), dengan status login ditampilkan di navbar
-- Cookie kustom `last_login` yang mencatat waktu login terakhir dan ditampilkan di halaman Profile, lalu dihapus saat logout
-- Otorisasi berbasis peran (pengunjung, pengguna biasa, Editor, pemilik portofolio) yang dicek di sisi server, dan tombol aksi disembunyikan di template bagi pengguna yang tidak berhak
-- Fitur star pada Experience dan Achievement: pengguna yang sudah login dapat memberi atau membatalkan star (maksimal satu per pengguna), dengan jumlah total star dan status pengguna ditampilkan di tiap kartu
-- Halaman Experience dan Achievement memuat datanya lewat AJAX (`fetch()`): halaman hanya merender kerangka (loading/error/empty state), lalu data diambil dari endpoint `api/experiences/` dan `api/achievements/` yang disusun manual dengan `JsonResponse`, termasuk jumlah star dan status star pengguna yang sedang login (field `starred_by` menampilkan username, bukan `id` internal database)
-- Pencarian kata kunci dengan debouncing (300ms) pada Experience dan Achievement, digabung dengan filter kategori/level yang sudah ada; permintaan lama dibatalkan otomatis lewat `AbortController` saat permintaan baru dikirim
-- Tombol pengurutan hasil berdasarkan jumlah star (Terbaru/Star) pada halaman Experience dan Achievement
-- Form tambah data (Achievement, Experience) ditampilkan dalam modal berbasis Popover API pada halaman daftar, dikirim lewat `fetch()` ke endpoint `*-ajax/` yang memvalidasi dengan `ModelForm` dan membalas JSON beserta status HTTP (201/400/403); daftar diperbarui tanpa reload setelah data berhasil ditambahkan
-- Perlindungan XSS dua lapis: `escapeHtml()` di JavaScript (`static/js/common.js`) sebelum data disisipkan ke `innerHTML`, dan `strip_tags()` pada method `clean_<field>` di `AchievementForm`/`ExperienceForm`
-- Field `started_at` pada Experience dapat diisi manual dan ditampilkan sebagai rentang tanggal mulai-selesai pada tiap kartu
-- Section Projects masih menggunakan pola Tugas 3/4 (render langsung dari template, belum AJAX) dan direncanakan mengikuti pola Experience/Achievement di atas pada iterasi berikutnya
-- Notifikasi aksi (tambah/ubah/hapus/gagal) ditampilkan sebagai toast popup (`showToast`, dimuat dari `static/js/toast.js` lewat `base.html`)
+## Fitur
+
+**Konten & halaman**
+- Profile (data diri, bio, tautan sosial), Skills, Education (timeline), Projects (render langsung dari template, belum AJAX).
+- Experience dan Achievement: filter kategori/level, pencarian berdebounce 300 ms, pengurutan berdasarkan star, rentang tanggal pada Experience.
+
+**Autentikasi & otorisasi (Tugas 4)**
+- Registrasi, login, logout bawaan Django; cookie kustom `last_login` ditampilkan di Profile dan dihapus saat logout.
+- Empat peran: pengunjung, pengguna biasa, Editor, pemilik portofolio (superuser). Tombol aksi disembunyikan di template, tetapi pembatasan sebenarnya dicek di server.
+- Star: satu per pengguna per item, jumlah total dan status star pengguna tampil di tiap kartu.
+
+**AJAX & UI (Tugas 5)**
+- Halaman Experience/Achievement hanya merender kerangka (loading/error/empty state), data dimuat lewat `fetch()`.
+- Modal tambah data (Popover API), toast notifikasi (`static/js/toast.js`), pembatalan request lama dengan `AbortController`.
+- Perlindungan XSS dua lapis: `escapeHtml()` (`static/js/common.js`) dan `strip_tags()`.
+
+**Django REST Framework (Tutorial 7 & Tugas 6)**
+- API di `/api/v1/` untuk Achievement dan Experience: daftar, detail, create, `PUT`/`PATCH`, delete, dan toggle star.
+- `ModelSerializer` dengan field eksplisit, validasi `validate_<field>` + `strip_tags`, field star read-only, serializer dasar bersama (`StarFieldsSerializer`).
+- Permission class per model yang menerapkan empat peran; `SessionAuthentication` dengan CSRF.
+- Pencarian, filter, dan pengurutan (`?sort=stars`) dilakukan di server lewat query parameter.
+- Halaman Experience dan Achievement memakai API ini untuk tampil, cari, tambah, **edit (PATCH lewat modal)**, star, dan hapus tanpa reload.
+- Error validasi 400 tampil per-field di bawah input modal, dan error 403/400 juga tampil lewat toast.
+- Endpoint lama (`get_*_json`, `create_*_ajax`, halaman edit lama) tetap ada dan berfungsi.
 
 ## Tech Stack
 
-- Django (backend server, routing, ORM, form handling)
-- HTML5 (struktur semantik, template inheritance dengan `base.html`)
-- CSS3 murni (grid, flexbox, custom properties, media query)
+- Python, Django 5.2 (routing, ORM, form, auth)
+- Django REST Framework (serializer, permission, API view)
+- HTML5, CSS3 murni (grid, flexbox, custom properties, media query)
+- JavaScript vanilla (`fetch`, Popover API, `AbortController`)
+- SQLite (lokal), PWS (deployment)
+
+## Struktur Proyek
+
+```
+myportofolio/
+├── manage.py, requirements.txt, README.md
+├── portofolio/            # settings.py, urls.py (include api/v1/ dan api-auth/)
+├── main/
+│   ├── models.py          # Experience, Achievement
+│   ├── forms.py           # ModelForm + clean_<field> (halaman/form lama)
+│   ├── views.py           # view halaman & endpoint JSON lama
+│   ├── serializers.py     # serializer DRF
+│   ├── permissions.py     # permission class peran
+│   ├── api_views.py       # API view berbasis fungsi
+│   ├── api_urls.py        # route /api/v1/ (namespace "api")
+│   ├── tests.py           # test halaman & view lama
+│   └── tests_api.py       # test API (APITestCase)
+├── static/                # css/style.css, js/common.js, js/toast.js
+└── templates/             # base, halaman, components/ (modal, toast)
+```
 
 ## Cara Menjalankan Proyek
 
 ### Prasyarat
-- Python 3.x sudah terinstal
-- Git
+- Python 3.x dan Git
 
 ### Langkah Setup
 
-1. Clone repository ini:
-```bash
+1. Clone repository:
+   ```bash
    git clone https://github.com/KhanyfatulMuflikhat/myportofolio.git
    cd myportofolio
-```
+   ```
 
 2. Buat dan aktifkan virtual environment:
-```bash
+   ```bash
    python -m venv env
    # Windows
    env\Scripts\activate
    # macOS/Linux
    source env/bin/activate
-```
+   ```
 
-3. Install dependencies:
-```bash
+3. Install dependency (termasuk `djangorestframework`):
+   ```bash
    pip install -r requirements.txt
-```
+   ```
 
-4. Jalankan migrasi database:
-```bash
+4. Jalankan migrasi:
+   ```bash
    python manage.py migrate
-```
+   ```
 
 5. Buat akun pemilik portofolio (superuser):
-```bash
+   ```bash
    python manage.py createsuperuser
-```
+   ```
 
-6. Buat peran Editor. Data grup tersimpan di database, bukan di kode, jadi langkah ini perlu dilakukan di setiap database baru:
-   - Login sebagai superuser, lalu buka `http://127.0.0.1:8000/admin/` => **Groups** => **Add group**
-   - Beri nama `Editor`
-   - Pindahkan permission `main | achievement | Can change achievement` dan `main | experience | Can change experience` ke kolom *Chosen*, lalu simpan
-   - Daftarkan akun biasa lewat `/register/`, lalu di Admin => **Users** buka akun tersebut dan tambahkan ke grup `Editor` (jangan centang *Staff status* maupun *Superuser*)
+6. Buat peran Editor. Data grup tersimpan di database, jadi langkah ini diulang di setiap database baru (termasuk di PWS):
+   - Login sebagai superuser, buka `/admin/` → **Groups** → **Add group**, beri nama `Editor`.
+   - Pindahkan permission `main | achievement | Can change achievement` dan `main | experience | Can change experience` ke *Chosen*, lalu simpan.
+   - Daftarkan akun biasa lewat `/register/`, lalu di Admin → **Users** tambahkan akun itu ke grup `Editor` (jangan centang *Staff status* maupun *Superuser*).
 
-7. Jalankan development server:
-```bash
+7. Jalankan server:
+   ```bash
    python manage.py runserver
-```
+   ```
 
-8. Buka browser dan akses `http://127.0.0.1:8000/`
+8. Buka `http://127.0.0.1:8000/`. Browsable API tersedia di `http://127.0.0.1:8000/api/v1/achievements/` dan `/api/v1/experiences/`.
+
+### Menjalankan Test
+
+```bash
+python manage.py test main
+```
+Gunakan nama app `main` (bukan `python manage.py test` saja) agar skrip Selenium di root, jika ada, tidak ikut dijalankan.
+
+### Catatan Deployment (PWS)
+- Pastikan `djangorestframework` ada di `requirements.txt`.
+- Database PWS terpisah dari lokal: grup Editor dan akun uji harus dibuat ulang lewat `/admin/` PWS.
+- Sesuaikan `CSRF_TRUSTED_ORIGINS` dengan origin HTTPS PWS; jangan menghapus `SECRET_KEY`.
+
+## Dokumentasi API (`/api/v1/`)
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| GET | `/achievements/` | Daftar. Query: `level`, `q` (judul/penyelenggara/deskripsi), `sort=stars` |
+| POST | `/achievements/` | Buat data (201 / 400). Hanya pemilik |
+| GET | `/achievements/<uuid>/` | Detail (404 jika tidak ada) |
+| PUT / PATCH | `/achievements/<uuid>/` | Ubah penuh / sebagian. Pemilik dan Editor |
+| DELETE | `/achievements/<uuid>/` | Hapus (204). Hanya pemilik |
+| POST | `/achievements/<uuid>/star/` | Toggle star akun yang sedang login |
+| GET / POST | `/experiences/` | Sama; query: `category`, `q` (judul/deskripsi), `sort=stars` |
+| GET / PUT / PATCH / DELETE | `/experiences/<uuid>/` | Sama seperti Achievement |
+| POST | `/experiences/<uuid>/star/` | Toggle star |
+
+Contoh respons satu Achievement:
+```json
+{
+  "id": "09b5af69-a69d-4fbe-8181-29fd6f1d0455",
+  "title": "KIHAJAR STEM 2023",
+  "issuer": "Kemendikbudristek",
+  "description": "...",
+  "level": "national",
+  "level_display": "National",
+  "date_achieved": "2023-10-09",
+  "certificate_url": null,
+  "star_count": 1,
+  "is_starred": false,
+  "starred_by_names": "username1"
+}
+```
+`starred_by_names` hanya berisi username; id internal pengguna, email, dan password hash tidak pernah ikut tampil. `star_count`, `is_starred`, `starred_by_names`, dan `is_ongoing` bersifat read-only.
+
+Status HTTP: 200 (berhasil), 201 (dibuat), 204 (dihapus), 400 (validasi gagal, berbentuk `{"field": ["pesan"]}`), 403 (tidak berhak, termasuk pengunjung yang menulis karena memakai `SessionAuthentication`), 404 (tidak ditemukan), 405 (method tidak didukung).
 
 ## Hak Akses Pengguna
 
-| Peran | Melihat data | Memberi star | Mengubah data | Membuat / menghapus data |
+| Peran | Melihat data | Memberi star | Mengubah (PUT/PATCH) | Membuat / menghapus |
 |---|---|---|---|---|
-| Pengunjung (belum login) | Ya | Tidak (dialihkan ke login) | Tidak (dialihkan ke login) | Tidak (dialihkan ke login) |
+| Pengunjung (belum login) | Ya | Tidak | Tidak | Tidak |
 | Pengguna biasa | Ya | Ya | Tidak (403) | Tidak (403) |
 | Editor | Ya | Ya | Ya | Tidak (403) |
 | Pemilik portofolio (superuser) | Ya | Ya | Ya | Ya |
 
-Implementasi:
-- Peran Editor dibuat lewat Django `Group` bernama `Editor` yang memiliki permission `change_achievement` dan `change_experience`. View update dilindungi `@login_required` dan `@permission_required(..., raise_exception=True)`; superuser otomatis lolos karena memiliki semua permission.
-- View create dan delete dilindungi `@login_required` dan pengecekan `request.user.is_superuser` yang melempar `PermissionDenied` (HTTP 403).
-- View `toggle_star_achievement` dan `toggle_star_experience` hanya memerlukan login dan hanya memproses request `POST` dengan `{% csrf_token %}`.
-- Di template, tombol Add hanya tampil untuk superuser, tombol Edit untuk pengguna dengan permission `change_*` (`perms`), tombol Delete hanya untuk superuser. Ini hanya mengatur tampilan; pembatasan sebenarnya tetap ada di view.
+Pada halaman HTML lama, pengunjung yang mencoba aksi tulis dialihkan ke halaman login; pada API, hasilnya 403.
 
+Implementasi:
+- **Halaman lama:** `@login_required` + `@permission_required(..., raise_exception=True)` untuk update; create/delete memeriksa `is_superuser` dan melempar `PermissionDenied`.
+- **API:** `IsPortfolioOwnerOrEditorOrReadOnly` (`main/permissions.py`) dengan turunan `AchievementPermission` dan `ExperiencePermission`. Method aman boleh untuk semua; `PUT`/`PATCH` untuk superuser atau pemegang permission `change_*` (Editor lewat Group); `POST`/`DELETE` hanya superuser. Endpoint star memakai `IsAuthenticated` dan selalu memakai `request.user`.
+- **Template:** tombol Add/Delete hanya untuk superuser, Edit untuk pemegang `perms.main.change_*`. Ini hanya tampilan; pembatasan sebenarnya ada di server.
+
+## Progres Mingguan
+
+| Minggu | Fokus | Hasil utama |
+|---|---|---|
+| Tugas 1 | HTML5 & CSS3 | Halaman Profile, Skills, Education, Projects yang responsif |
+| Tugas 2 | Django dasar | Model `Achievement`, routing, template, deployment PWS |
+| Tugas 3 | Form & JSON | `ModelForm`, CRUD Achievement dan Experience, endpoint JSON |
+| Tugas 4 | Auth & otorisasi | Login/register, cookie `last_login`, star, peran Editor |
+| Tugas 5 | AJAX & UI | `fetch()`, debounce, modal Popover, toast, proteksi XSS |
+| Tugas 6 | Django REST Framework | API `/api/v1/`, serializer, permission, halaman memakai API, edit via PATCH, sort di server, error per-field, test API |
 
 ## Pertanyaan Reflektif
 
@@ -138,6 +223,18 @@ Implementasi:
 2. `fetch()` adalah fungsi asinkron yang langsung mengembalikan sebuah `Promise`, bukan hasil akhirnya, karena permintaan ke server butuh waktu dan JavaScript tidak boleh berhenti (blocking) menunggu jaringan. `await` dipakai di dalam fungsi `async` untuk "menjeda" eksekusi fungsi tersebut sampai `Promise` itu selesai lalu mengembalikan nilai akhirnya secara langsung, seolah-olah kode ditulis secara sinkron. Di `fetchAchievements()`, `fetchExperiences()`, dan fungsi `addAchievement()`/`addExperience()` pada proyek ini, `await fetch(...)` dipakai supaya baris-baris setelahnya, misalnya `if (!response.ok) throw new Error(...)` atau `const data = await response.json()`, baru dijalankan setelah respons dari server benar-benar diterima. `await` kedua pada `response.json()` juga diperlukan karena membaca body respons itu sendiri adalah operasi asinkron yang terpisah dari menerima header respons. Jika `await` tidak dipakai, variabel `response` akan berisi objek `Promise` sehingga `response.ok` atau `response.json()` akan error atau mengembalikan `undefined`. Kode setelah `fetch()` juga akan tetap berjalan duluan tanpa menunggu, sehingga logika seperti `gridContainer.innerHTML = ''` atau `showToast(...)` bisa dieksekusi sebelum data dari server benar-benar tersedia. Penanganan error lewat `try/catch` juga tidak akan menangkap kegagalan jaringan dengan benar, karena `Promise` yang gagal tanpa `await` menjadi *unhandled promise rejection* yang tidak pernah masuk ke `catch`. Singkatnya, `await` memastikan urutan eksekusi kode mengikuti urutan logis dari kirim permintaan, tunggu respons, lalu proses hasil, alih-alih berjalan semua sekaligus tanpa menunggu data benar-benar sampai.
 
 3. Cross-Site Scripting (XSS) adalah serangan ketika penyerang berhasil menyisipkan kode JavaScript miliknya ke dalam halaman web, yang kemudian ikut dijalankan oleh browser pengguna lain seolah-olah kode itu bagian sah dari situs tersebut. Salah satu bentuknya adalah *stored XSS*: kode berbahaya disimpan ke database (misalnya lewat field `title` pada form Achievement atau Experience) lalu dieksekusi ulang setiap kali data itu ditampilkan ke pengguna lain, termasuk pengunjung yang belum login. Pada template Django biasa, setiap variabel yang dirender lewat `{{ variabel }}` otomatis di-*escape* oleh sistem *auto-escaping* bawaan Django di mana karakter seperti `<` dan `>` diubah menjadi `&lt;` dan `&gt;` dan ditampilkan sebagai teks biasa. Perlindungan otomatis ini hilang begitu data dipindahkan ke AJAX. Pada `buildAchievementCardElement()` dan `buildExperienceCardElement()` di proyek ini, data dari JSON disisipkan ke dalam template literal JavaScript lalu dipasang ke DOM lewat `articleElement.innerHTML = ...`. Tidak ada lagi Django yang ikut campur di titik ini.`innerHTML` memperlakukan string apa pun yang diberikan sebagai HTML sungguhan, termasuk tag dan atribut event handler seperti `onerror`. Kalau field `title` berisi `<img src="x" onerror="alert('XSS!')">`, browser akan mencoba memuat gambar dari `x`, gagal, lalu benar-benar menjalankan isi atribut `onerror` sebagai kode JavaScript. Risikonya nyata karena cookie `csrftoken` bisa dibaca oleh JavaScript apa pun yang berjalan di halaman itu, termasuk kode yang disisipkan lewat XSS, sehingga kode tersebut berpotensi mengirim permintaan `POST` atas nama korban (misalnya memberi star, atau menghapus data kalau korbannya superuser) tanpa sepengetahuan korban. Untuk itu, proyek ini menerapkan dua lapis perlindungan: fungsi `escapeHtml()` (di `static/js/common.js`) membungkus setiap nilai teks dari JSON sebelum disisipkan ke `innerHTML` sebagai pertahanan utama, dan method `clean_title`, `clean_issuer`, `clean_description` pada `AchievementForm`/`ExperienceForm` memanggil `strip_tags()` untuk membuang tag HTML sejak data divalidasi dan disimpan, sebagai lapisan tambahan di sisi server yang otomatis berlaku untuk jalur create biasa, update, maupun AJAX karena memakai form yang sama.
+
+### Tugas 6
+
+1. REST (Representational State Transfer) adalah gaya arsitektur untuk sistem terdistribusi dengan beberapa batasan: arsitektur client-server, komunikasi *stateless* (tiap request membawa informasi yang dibutuhkan), respons yang dapat di-*cache*, sistem berlapis, dan *uniform interface*. Uniform interface berarti sumber daya (resource) diidentifikasi oleh URL, dimanipulasi lewat representasinya (misalnya JSON), memakai method HTTP sesuai maknanya (`GET` membaca, `POST` membuat, `PUT`/`PATCH` mengubah, `DELETE` menghapus), dengan status code yang bermakna. Mengembalikan JSON saja belum cukup karena JSON hanya format data. Endpoint seperti `/get_achievements_json/` atau `/delete_achievement/<id>/` yang selalu memakai `POST` dan membalas 200 dengan JSON tetap bergaya RPC: URL-nya berisi kata kerja, method HTTP tidak dipakai sesuai fungsinya, dan klien harus menebak hasilnya. Di API proyek ini, resource-nya `/api/v1/achievements/` dan `/api/v1/achievements/<id>/`, aksinya ditentukan oleh method HTTP, dan hasilnya dilaporkan lewat status code (201, 204, 400, 403, 404). Secara jujur, API saya belum RESTful murni: `SessionAuthentication` bergantung pada session di server sehingga tidak sepenuhnya *stateless*, dan saya tidak menyediakan tautan antarresource (HATEOAS). Jadi lebih tepat disebut API yang mengikuti konvensi REST secara pragmatis.
+
+   `PUT` mengganti seluruh representasi resource, sehingga semua field wajib dikirim dan field opsional yang tidak dikirim tidak dipertahankan. `PUT` bersifat idempoten: dikirim berulang dengan data sama menghasilkan keadaan sama. `PATCH` hanya mengubah field yang dikirim (di DRF lewat `partial=True`). `PUT` cocok ketika klien memegang data lengkap dan ingin menggantinya, misalnya form edit penuh yang mengirim semua field. `PATCH` cocok untuk perubahan kecil, misalnya mengganti judul Achievement saja. Modal edit di halaman saya memakai `PATCH`. Di test, `PUT` dengan hanya `title` ditolak 400 karena `description` dan `date_achieved` wajib, sedangkan `PATCH` dengan `title` saja berhasil dan `description` tetap sama.
+
+2. Serializer di DRF menerjemahkan dua arah: objek model/queryset menjadi tipe data sederhana (dict yang kemudian dirender menjadi JSON), dan data masuk dari klien menjadi data tervalidasi yang bisa disimpan lewat `.save()`. Ia juga mendefinisikan *kontrak* API: field mana yang tampil, mana yang read-only, dan aturan validasinya. Dibandingkan merakit dictionary manual dengan `JsonResponse` di Tutorial 05, keuntungannya: (1) kontrak data didefinisikan sekali di satu kelas untuk output dan input, sedangkan di Tutorial 05 output memakai dictionary manual dan input memakai `ModelForm` sehingga ada dua jalur yang bisa tidak sinkron; (2) `ModelSerializer` membaca model sehingga tipe, panjang maksimum, `choices`, dan validasi `URLField` ikut otomatis, termasuk konversi UUID dan tanggal; (3) validasi dan pembersihan teks terpusat di `validate_<field>` (`strip_tags`), dan kegagalan menghasilkan 400 berbentuk `{"field": ["pesan"]}` yang konsisten; (4) field hasil hitung seperti `star_count` dan `is_starred` ditandai read-only (`SerializerMethodField`) sehingga klien tidak bisa memalsukannya; (5) logika bisa dipakai ulang, misalnya `StarFieldsSerializer` dipakai bersama oleh Achievement dan Experience; dan (6) kode view jadi pendek karena `.create()` dan `.update()` sudah disediakan.
+
+3. Autentikasi menjawab "siapa kamu": authentication class (di proyek ini `SessionAuthentication`) membaca session login Django dan mengisi `request.user`. Otorisasi menjawab "apa yang boleh kamu lakukan": permission class memutuskan apakah request diteruskan ke view. Di proyek ini `AchievementPermission` dan `ExperiencePermission` mengizinkan baca untuk semua, `PUT`/`PATCH` untuk superuser atau pemegang permission `change_*`, serta `POST`/`DELETE` hanya untuk superuser; endpoint star memakai `IsAuthenticated`. Hak akses harus diperiksa di server karena menyembunyikan tombol hanya mengubah tampilan. Siapa pun bisa mengirim request langsung lewat DevTools Console, `curl`, atau Postman tanpa pernah melihat tombolnya, dan kode JavaScript di sisi klien bisa dimodifikasi pengguna. Karena itu server harus menolak setiap request yang tidak berhak. Test saya membuktikannya: pengunjung dan pengguna biasa yang mengirim `POST`/`PATCH`/`DELETE` mendapat 403, dan isi database dicek tetap tidak berubah.
+
+4. Dengan `SessionAuthentication`, identitas pengguna dibawa oleh cookie session yang dikirim browser otomatis pada setiap request ke domain tersebut, termasuk request yang dipicu halaman milik pihak lain. Tanpa pengaman, situs berbahaya bisa membuat browser korban yang sedang login mengirim `POST`/`DELETE` ke API atas nama korban (CSRF). Karena itu DRF mewajibkan token CSRF pada `POST`, `PUT`, `PATCH`, dan `DELETE` untuk pengguna yang terautentikasi lewat session, dikirim lewat header `X-CSRFToken`. Token ini tidak bisa dibaca situs lain karena batasan same-origin, sehingga hanya halaman sah milik kita yang bisa menyertakannya. Test dengan `force_authenticate` tidak cukup karena ia langsung menetapkan `request.user` tanpa melewati proses autentikasi session, sehingga pemeriksaan CSRF tidak pernah dijalankan; `APIClient` juga menonaktifkan pemeriksaan CSRF secara default. Untuk membuktikan perlindungan berjalan, saya memakai `APIClient(enforce_csrf_checks=True)` dan `.login()` yang membuat session sungguhan: `POST` tanpa token ditolak 403 dan data tidak tersimpan, sedangkan `POST` dengan token dari cookie `csrftoken` berhasil 201.
 
 ## AI Disclosure
 
@@ -248,7 +345,7 @@ Saya membagikan teks tutorial dan kode asli saya (`views.py`, template, `base.ht
 **Refleksi kritis terhadap keterbatasan AI:**
 AI awalnya memakai contoh dari tutorial secara langsung, padahal struktur proyek saya berbeda (dua model, dan proteksi `PROJECT_SECRET` yang sudah ada), sehingga saya harus memutuskan sendiri apakah proteksi lama diganti atau digabung. AI juga tidak bisa melihat kondisi environment saya: kasus cookie `last_login` yang tidak muncul baru terjawab setelah saya melaporkan bahwa saya login lewat `/admin/`, dan kekurangan di `update_experience` baru ketahuan setelah saya membagikan `views.py` yang sebenarnya. Ini menegaskan bahwa saran AI harus diverifikasi terhadap kode dan perilaku aplikasi nyata.
 
-**Log Chat:**
+**Log Chat:** [Log AI chat](https://claude.ai/share/526426c5-442c-4b48-b4c3-39d0fce74501)
 
 ### Tugas 5
 
@@ -271,3 +368,31 @@ Saya membagikan materi Tutorial 5 (toast, AJAX list, debouncing, modal, XSS prot
 
 **Refleksi kritis terhadap keterbatasan AI:**
 AI sering memiliki asumsi awal soal struktur field (misalnya tipe field `started_at`) yang beberapa kali meleset dan baru terkoreksi setelah saya melaporkan hasil `makemigrations --dry-run` dan screenshot tampilan aktual. Git merge conflict dan push yang ditolak juga hanya bisa diselesaikan setelah saya membagikan hasil `git log` dan `git fetch` yang sebenarnya karena AI tidak bisa melihat riwayat commit saya secara langsung. Ini menegaskan bahwa saran AI untuk tugas yang melibatkan eksekusi nyata (migrasi, testing lintas peran, git) tetap harus diverifikasi langkah demi langkah terhadap kondisi proyek yang sebenarnya, bukan diterima mentah-mentah.
+
+**Log Chat:** [Log AI chat](https://claude.ai/share/526426c5-442c-4b48-b4c3-39d0fce74501)
+
+### Tugas 6
+
+**Tools yang digunakan:** Claude Sonnet 5.5 (Anthropic)
+
+**Strategi prompting:**
+Saya meminta AI memetakan pola Tutorial 7 (yang memakai model `Project`) ke dua model saya, Achievement dan Experience, dengan membagikan `models.py`, `tests.py`, template, dan `style.css` asli saya. Saya juga menempelkan teks tutorial dan teks Individual Assignment 6 (karena AI tidak bisa membuka halaman tutorial), lalu meminta langkah kerja dan pesan commit per file, pengecekan terhadap checklist tugas, dan saran untuk mencapai rubrik nilai 4. Saat ada error, saya menempelkan output terminal dan meminta diagnosis.
+
+**Bagian yang dibantu AI:**
+- Kerangka implementasi serializer, permission class, API view, dan routing `/api/v1/` untuk Achievement, lalu replikasi ke Experience dengan refactor (`StarFieldsSerializer`, helper `clean_text`, `_toggle_star`, permission yang dipakai ulang)
+- Fitur tambahan di luar checklist: `?sort=stars` di server, error validasi per-field di modal (`common.js`), dan docstring
+- Penulisan test `APITestCase` untuk seluruh peran, validasi, star, dan CSRF, serta pembaruan test lama
+- Perbaikan CSS responsif (tombol kartu dan navbar yang meluber)
+- Draf jawaban pertanyaan reflektif di atas
+
+**Bagian yang dikerjakan manual:**
+- Menyalin dan menerapkan seluruh kode ke file proyek, termasuk penyesuaian url dan namamodal, memperbaiki typo atau baris ganda hasil salinan
+- Memutuskan menerapkan pola ke Achievement dan Experience (bukan membuat model `Project`) dan memilih fitur ekstra yang diambil
+- Menjalankan `python manage.py test main` di tiap tahap, membaca kegagalan, dan memverifikasi nama URL/field terhadap kode asli
+- Pengujian manual di browser untuk keempat peran, termasuk uji GET/PATCH/DELETE lewat Browsable API dan Console
+- Pengecekan tampilan responsif lewat DevTools dan seluruh proses Git (commit granular, push, merge, deploy)
+
+**Refleksi kritis terhadap keterbatasan AI:**
+Pertama, AI menebak nama URL (misalnya `main:get_experiences_json`) dan nama field modal yang belum bisa dilihatnya. Asumsi itu harus saya sesuaikan manual dan test lama yang gagal harus saya sesuaikan sendiri terhadap perilaku aplikasi yang sebenarnya. Kedua, AI tidak bisa menjalankan kode di environment saya: hasil `makemigrations`, `runserver`, dan test hanya bisa dipastikan setelah saya menjalankannya dan melaporkan output-nya, begitu pula masalah venv Windows vs WSL. Ketiga, AI cenderung menawarkan banyak fitur tambahan sekaligus. Saya memilih yang kecil risikonya agar tidak merusak fungsionalitas inti. Dari proses ini saya belajar bahwa kode dari AI perlu dibuktikan lewat test dan pengujian manual dan bahwa perbaikan manual (menyelaraskan test lama, memperbaiki CSS, memverifikasi permission lewat uji penolakan) adalah bagian yang menentukan kualitas hasil akhir.
+
+**Log Chat:** [Log AI chat](https://claude.ai/share/526426c5-442c-4b48-b4c3-39d0fce74501)
