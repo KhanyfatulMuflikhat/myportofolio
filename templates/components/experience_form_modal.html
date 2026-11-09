@@ -17,7 +17,7 @@
                 popovertargetaction="hide"
                 aria-label="Tutup form tambah experience">×</button>
 
-        <h2 id="add-experience-modal-title">Tambah Experience Baru</h2>
+        <h2 id="add-experience-modal-title" data-add-text="Tambah Experience Baru" data-edit-text="Edit Experience">Tambah Experience Baru</h2>
         <form id="experience-form"
               method="post"
               action="{% url 'main:create_experience' %}"
@@ -37,7 +37,7 @@
                         class="button button-secondary"
                         popovertarget="add-experience-modal"
                         popovertargetaction="hide">Batal</button>
-                <button type="submit" class="button">Tambah Experience</button>
+                <button type="submit" class="button" data-add-text="Tambah Experience" data-edit-text="Simpan Perubahan">Tambah Experience</button>
             </div>
         </form>
     </div>
