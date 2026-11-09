@@ -150,6 +150,16 @@ class AchievementAPITest(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_sort_by_stars(self):
+        other = Achievement.objects.create(
+            title="Other", issuer="X", description="d",
+            level="school", date_achieved="2024-01-01",
+        )
+        other.starred_by.add(self.visitor)
+        self.assertEqual(self.client.get(self.list_url).data[0]["id"], str(self.achievement.id))
+        response = self.client.get(self.list_url, {"sort": "stars"})
+        self.assertEqual(response.data[0]["id"], str(other.id))
+
 
 class ExperienceAPITest(APITestCase):
     def setUp(self):
@@ -265,3 +275,12 @@ class ExperienceAPITest(APITestCase):
         token = client.cookies["csrftoken"].value
         response = client.post(self.list_url, self.payload, format="json", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code, 201)
+
+    def test_sort_by_stars(self):
+        other = Experience.objects.create(
+            title="Other", description="d", category="research", started_at="2024-01-01",
+        )
+        other.starred_by.add(self.visitor)
+        self.assertEqual(self.client.get(self.list_url).data[0]["id"], str(self.experience.id))
+        response = self.client.get(self.list_url, {"sort": "stars"})
+        self.assertEqual(response.data[0]["id"], str(other.id))
