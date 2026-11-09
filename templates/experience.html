@@ -89,8 +89,7 @@ function displayPageSection({ showLoading = false, showError = false, showEmpty 
 
 function renderGrid(data) {
     if (data.length === 0) { displayPageSection({ showEmpty: true }); return; }
-    const sorted = sortByStars ? [...data].sort((a, b) => b.star_count - a.star_count) : data;
-    gridContainer.replaceChildren(...sorted.map(buildExperienceCardElement));
+    gridContainer.replaceChildren(...data.map(buildExperienceCardElement));
     displayPageSection({ showGrid: true });
 }
 
@@ -141,6 +140,7 @@ async function fetchExperiences(category = "", query = "") {
         const url = new URL(LIST_ENDPOINT, window.location.origin);
         if (category) url.searchParams.set('category', category);
         if (query) url.searchParams.set('q', query);
+        if (sortByStars) url.searchParams.set('sort', 'stars');
         const response = await fetch(url, {
             headers: { Accept: 'application/json' },
             signal: experiencesAbortController.signal,
@@ -174,7 +174,9 @@ async function writeRequest(url, method, payload) {
     });
     if (response.status === 204) return null;
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+    if (!response.ok) {
+        throw new ApiError(apiErrorMessage(data, response.status), response.status === 400 ? data : {});
+    }
     return data;
 }
 
@@ -183,6 +185,7 @@ async function saveExperience(event) {
     const submitButton = experienceForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     const wasEdit = Boolean(editingId);
+    clearFieldErrors(experienceForm);
     try {
         const fields = new FormData(experienceForm);
         const payload = Object.fromEntries(FORM_FIELDS.map(name => [name, fields.get(name)]));
@@ -195,6 +198,7 @@ async function saveExperience(event) {
         showToast('Berhasil', wasEdit ? 'Experience diperbarui.' : 'Experience baru berhasil ditambahkan!', 'success');
         await refresh();
     } catch (error) {
+        showFieldErrors(experienceForm, error.fieldErrors);
         showToast(wasEdit ? 'Gagal memperbarui experience' : 'Gagal menambahkan experience', error.message, 'error');
     } finally {
         submitButton.disabled = false;
@@ -224,7 +228,7 @@ function openEditModal(id) {
 if (experienceForm) {
     experienceForm.addEventListener('submit', saveExperience);
     document.getElementById('add-experience-modal').addEventListener('toggle', e => {
-        if (e.newState === 'closed') { editingId = null; experienceForm.reset(); setModalMode(false); }
+        if (e.newState === 'closed') { editingId = null; experienceForm.reset(); setModalMode(false); clearFieldErrors(experienceForm); }
     });
 }
 
@@ -259,7 +263,7 @@ searchInput.addEventListener('input', function () {
 sortToggle.addEventListener('click', function () {
     sortByStars = !sortByStars;
     sortToggle.textContent = sortByStars ? 'Urutkan: Star' : 'Urutkan: Terbaru';
-    renderGrid(lastFetchedData);
+    refresh();
 });
 
 filterContainer.addEventListener('click', function (e) {
