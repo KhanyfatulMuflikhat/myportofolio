@@ -101,10 +101,7 @@ function renderGrid(data) {
         displayPageSection({ showEmpty: true });
         return;
     }
-    const sorted = sortByStars
-        ? [...data].sort((a, b) => b.star_count - a.star_count)
-        : data;
-    gridContainer.replaceChildren(...sorted.map(buildAchievementCardElement));
+    gridContainer.replaceChildren(...data.map(buildAchievementCardElement));
     displayPageSection({ showGrid: true });
 }
 
@@ -164,6 +161,7 @@ async function fetchAchievements(level = "", query = "") {
         const url = new URL(LIST_ENDPOINT, window.location.origin);
         if (level) url.searchParams.set('level', level);
         if (query) url.searchParams.set('q', query);
+        if (sortByStars) url.searchParams.set('sort', 'stars');
 
         const response = await fetch(url, {
             headers: { Accept: 'application/json' },
@@ -201,7 +199,9 @@ async function writeRequest(url, method, payload) {
     });
     if (response.status === 204) return null;
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+    if (!response.ok) {
+        throw new ApiError(apiErrorMessage(data, response.status), response.status === 400 ? data : {});
+    }
     return data;
 }
 
@@ -210,6 +210,7 @@ async function saveAchievement(event) {
     const submitButton = achievementForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     const wasEdit = Boolean(editingId);
+    clearFieldErrors(achievementForm);
     try {
         const fields = new FormData(achievementForm);
         const payload = Object.fromEntries([
@@ -221,6 +222,7 @@ async function saveAchievement(event) {
         showToast('Berhasil', wasEdit ? 'Achievement diperbarui.' : 'Achievement baru berhasil ditambahkan!', 'success');
         await refresh();
     } catch (error) {
+        showFieldErrors(achievementForm, error.fieldErrors);
         showToast(wasEdit ? 'Gagal memperbarui achievement' : 'Gagal menambahkan achievement', error.message, 'error');
     } finally {
         submitButton.disabled = false;
@@ -241,7 +243,7 @@ function openEditModal(id) {
 if (achievementForm) {
     achievementForm.addEventListener('submit', saveAchievement);
     document.getElementById('add-achievement-modal').addEventListener('toggle', e => {
-        if (e.newState === 'closed') { editingId = null; achievementForm.reset(); }
+        if (e.newState === 'closed') { editingId = null; achievementForm.reset(); clearFieldErrors(achievementForm); }
     });
 }
 
@@ -276,7 +278,7 @@ searchInput.addEventListener('input', function () {
 sortToggle.addEventListener('click', function () {
     sortByStars = !sortByStars;
     sortToggle.textContent = sortByStars ? 'Urutkan: Star' : 'Urutkan: Terbaru';
-    renderGrid(lastFetchedData);
+    refresh();
 });
 
 filterContainer.addEventListener('click', function (e) {
