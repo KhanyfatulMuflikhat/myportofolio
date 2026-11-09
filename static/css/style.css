@@ -1172,3 +1172,44 @@ h1, .brand {
 .project-card-actions .button-star {
     gap: 0.3rem;
 }
+
+/* hero: center nama dan foto di HP */
+@media (max-width: 600px) {
+    .hero-identity {
+        text-align: center;
+    }
+
+    .hero-photo {
+        margin: 0 auto;
+    }
+}
+
+/* tombol star: teks di tengah, warna beda dari Edit */
+.button-star {
+    justify-content: center;
+    background: #fff;
+    color: var(--accent-dark);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.button-star:hover {
+    background: rgba(217, 93, 57, 0.1);
+}
+
+.button-star .star-count {
+    background: rgba(217, 93, 57, 0.15);
+}
+
+.button-star.is-starred {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: none;
+}
+
+.button-star.is-starred:hover {
+    background: var(--accent-dark);
+}
+
+.button-star.is-starred .star-count {
+    background: rgba(255, 255, 255, 0.25);
+}
