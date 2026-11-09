@@ -1,3 +1,4 @@
+"""DRF permission classes enforcing the portfolio's four roles."""
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
@@ -9,7 +10,7 @@ class IsPortfolioOwnerOrReadOnly(BasePermission):
 
 
 class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
-    """Read: everyone. PUT/PATCH: owner or holder of `edit_permission`. POST/DELETE: owner only."""
+    """DRF permission classes enforcing the portfolio's four roles."""
     message = "You do not have permission to perform this action."
     edit_permission = None
 
@@ -25,8 +26,10 @@ class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
 
 
 class AchievementPermission(IsPortfolioOwnerOrEditorOrReadOnly):
+    """Editors need main.change_achievement to PUT/PATCH achievements."""
     edit_permission = "main.change_achievement"
 
 
 class ExperiencePermission(IsPortfolioOwnerOrEditorOrReadOnly):
+    """Editors need main.change_experience to PUT/PATCH experiences."""
     edit_permission = "main.change_experience"

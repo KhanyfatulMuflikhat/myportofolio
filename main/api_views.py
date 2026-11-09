@@ -1,3 +1,4 @@
+"""Function-based DRF views under /api/v1/. Authorization lives in main.permissions."""
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -35,6 +36,7 @@ def _filtered_achievements(params):
 @authentication_classes([SessionAuthentication])
 @permission_classes([AchievementPermission])
 def achievement_list(request):
+    """GET: list with ?level, ?q, ?sort=stars. POST: create (owner only)."""
     if request.method in ("GET", "HEAD"):
         serializer = AchievementSerializer(
             _filtered_achievements(request.query_params),
@@ -52,6 +54,7 @@ def achievement_list(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([AchievementPermission])
 def achievement_detail(request, achievement_id):
+    """GET: read. PUT/PATCH: owner or Editor. DELETE: owner only."""
     achievement = get_object_or_404(
         Achievement.objects.prefetch_related("starred_by"), pk=achievement_id,
     )
@@ -86,6 +89,7 @@ def _toggle_star(request, model, serializer_class, pk):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def achievement_star(request, achievement_id):
+    """POST: toggle the logged-in user's star."""
     return _toggle_star(request, Achievement, AchievementSerializer, achievement_id)
 
 
@@ -109,6 +113,7 @@ def _filtered_experiences(params):
 @authentication_classes([SessionAuthentication])
 @permission_classes([ExperiencePermission])
 def experience_list(request):
+    """GET: list with ?category, ?q, ?sort=stars. POST: create (owner only)."""
     if request.method in ("GET", "HEAD"):
         serializer = ExperienceSerializer(
             _filtered_experiences(request.query_params),
@@ -126,6 +131,7 @@ def experience_list(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([ExperiencePermission])
 def experience_detail(request, experience_id):
+    """GET: read. PUT/PATCH: owner or Editor. DELETE: owner only."""
     experience = get_object_or_404(
         Experience.objects.prefetch_related("starred_by"), pk=experience_id,
     )
@@ -149,4 +155,5 @@ def experience_detail(request, experience_id):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def experience_star(request, experience_id):
+    """POST: toggle the logged-in user's star."""
     return _toggle_star(request, Experience, ExperienceSerializer, experience_id)

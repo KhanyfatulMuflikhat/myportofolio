@@ -1,3 +1,4 @@
+"""Serializers: input validation and read-only computed fields for the API."""
 from django.utils.html import strip_tags
 from rest_framework import serializers
 
@@ -32,6 +33,8 @@ class StarFieldsSerializer(serializers.ModelSerializer):
 
 
 class AchievementSerializer(StarFieldsSerializer):
+    """Achievement representation; text is stripped of HTML tags on input."""
+
     level_display = serializers.CharField(source="get_level_display", read_only=True)
 
     class Meta:
@@ -54,6 +57,8 @@ class AchievementSerializer(StarFieldsSerializer):
 
 
 class ExperienceSerializer(StarFieldsSerializer):
+    """Experience representation; rejects an end date earlier than the start date."""
+
     category_display = serializers.CharField(source="get_category_display", read_only=True)
     is_ongoing = serializers.BooleanField(read_only=True)
 
@@ -73,6 +78,7 @@ class ExperienceSerializer(StarFieldsSerializer):
         return clean_text(value)
 
     def validate(self, attrs):
+        """Cross-field check, also covering PATCH where one date is omitted."""
         started = attrs.get("started_at", getattr(self.instance, "started_at", None))
         ended = attrs.get("ended_at", getattr(self.instance, "ended_at", None))
         if started and ended and ended < started:
