@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -13,24 +13,32 @@ from main.permissions import AchievementPermission, ExperiencePermission
 from main.serializers import AchievementSerializer, ExperienceSerializer
 
 
+def _filtered_achievements(params):
+    """Apply the level, q and sort query params to the Achievement queryset."""
+    queryset = Achievement.objects.prefetch_related("starred_by")
+    level = params.get("level", "").strip()
+    q = params.get("q", "").strip()
+    if level:
+        queryset = queryset.filter(level=level)
+    if q:
+        queryset = queryset.filter(
+            Q(title__icontains=q) | Q(issuer__icontains=q) | Q(description__icontains=q)
+        )
+    if params.get("sort") == "stars":
+        return queryset.annotate(star_total=Count("starred_by")).order_by(
+            "-star_total", "-date_achieved", "id"
+        )
+    return queryset.order_by("-date_achieved", "id")
+
+
 @api_view(["GET", "HEAD", "POST"])
 @authentication_classes([SessionAuthentication])
 @permission_classes([AchievementPermission])
 def achievement_list(request):
     if request.method in ("GET", "HEAD"):
-        achievements = Achievement.objects.prefetch_related("starred_by").order_by(
-            "-date_achieved", "id"
-        )
-        level = request.query_params.get("level", "").strip()
-        q = request.query_params.get("q", "").strip()
-        if level:
-            achievements = achievements.filter(level=level)
-        if q:
-            achievements = achievements.filter(
-                Q(title__icontains=q) | Q(issuer__icontains=q) | Q(description__icontains=q)
-            )
         serializer = AchievementSerializer(
-            achievements, many=True, context={"request": request},
+            _filtered_achievements(request.query_params),
+            many=True, context={"request": request},
         )
         return Response(serializer.data)
 
@@ -81,25 +89,32 @@ def achievement_star(request, achievement_id):
     return _toggle_star(request, Achievement, AchievementSerializer, achievement_id)
 
 
+def _filtered_experiences(params):
+    """Apply the category, q and sort query params to the Experience queryset."""
+    queryset = Experience.objects.prefetch_related("starred_by")
+    category = params.get("category", "").strip()
+    q = params.get("q", "").strip()
+    if category:
+        queryset = queryset.filter(category=category)
+    if q:
+        queryset = queryset.filter(Q(title__icontains=q) | Q(description__icontains=q))
+    if params.get("sort") == "stars":
+        return queryset.annotate(star_total=Count("starred_by")).order_by(
+            "-star_total", "-started_at", "id"
+        )
+    return queryset.order_by("-started_at", "id")
+
+
 @api_view(["GET", "HEAD", "POST"])
 @authentication_classes([SessionAuthentication])
 @permission_classes([ExperiencePermission])
 def experience_list(request):
     if request.method in ("GET", "HEAD"):
-        experiences = Experience.objects.prefetch_related("starred_by").order_by(
-            "-started_at", "id"
+        serializer = ExperienceSerializer(
+            _filtered_experiences(request.query_params),
+            many=True, context={"request": request},
         )
-        category = request.query_params.get("category", "").strip()
-        q = request.query_params.get("q", "").strip()
-        if category:
-            experiences = experiences.filter(category=category)
-        if q:
-            experiences = experiences.filter(
-                Q(title__icontains=q) | Q(description__icontains=q)
-            )
-        return Response(
-            ExperienceSerializer(experiences, many=True, context={"request": request}).data
-        )
+        return Response(serializer.data)
 
     serializer = ExperienceSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
