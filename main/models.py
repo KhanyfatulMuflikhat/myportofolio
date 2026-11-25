@@ -51,3 +51,20 @@ class Achievement(models.Model):
 
     def __str__(self):
         return self.title
+
+class Project(models.Model):
+    """Portfolio project exposed through the REST API."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    tech_stack = models.CharField(max_length=200)
+    project_url = models.URLField()
+    project_image_url = models.URLField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
