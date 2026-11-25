@@ -2,7 +2,7 @@
 from django.utils.html import strip_tags
 from rest_framework import serializers
 
-from main.models import Achievement, Experience
+from main.models import Achievement, Experience, Project
 
 
 def clean_text(value, required=False, label="Field"):
@@ -86,3 +86,29 @@ class ExperienceSerializer(StarFieldsSerializer):
                 {"ended_at": "End date cannot be before start date."}
             )
         return attrs
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    """Project payload; text fields are stripped of HTML and whitespace."""
+
+    class Meta:
+        model = Project
+        fields = ["id", "title", "description", "tech_stack",
+                  "project_url", "project_image_url"]
+        read_only_fields = ["id"]
+
+    @staticmethod
+    def _clean(value, label):
+        cleaned = strip_tags(value).strip()
+        if not cleaned:
+            raise serializers.ValidationError(f"{label} cannot be empty.")
+        return cleaned
+
+    def validate_title(self, value):
+        return self._clean(value, "Title")
+
+    def validate_description(self, value):
+        return self._clean(value, "Description")
+
+    def validate_tech_stack(self, value):
+        return self._clean(value, "Tech stack")
