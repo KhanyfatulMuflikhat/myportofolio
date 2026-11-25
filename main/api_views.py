@@ -6,12 +6,12 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes,
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated 
 from rest_framework.response import Response
 
-from main.models import Achievement, Experience
-from main.permissions import AchievementPermission, ExperiencePermission
-from main.serializers import AchievementSerializer, ExperienceSerializer
+from main.models import Achievement, Experience, Project
+from main.permissions import AchievementPermission, ExperiencePermission, ProjectPermission
+from main.serializers import AchievementSerializer, ExperienceSerializer, ProjectSerializer
 
 
 def _filtered_achievements(params):
@@ -158,6 +158,7 @@ def experience_star(request, experience_id):
     """POST: toggle the logged-in user's star."""
     return _toggle_star(request, Experience, ExperienceSerializer, experience_id)
 
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def api_logout(request):
@@ -166,3 +167,14 @@ def api_logout(request):
         request.auth.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+@api_view(["GET", "POST"])
+@permission_classes([ProjectPermission])
+def project_list(request):
+    """GET: list projects (public). POST: create one (superuser only)."""
+    if request.method == "GET":
+        return Response(ProjectSerializer(Project.objects.all(), many=True).data)
+    serializer = ProjectSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
