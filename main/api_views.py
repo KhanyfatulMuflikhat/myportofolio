@@ -157,3 +157,12 @@ def experience_detail(request, experience_id):
 def experience_star(request, experience_id):
     """POST: toggle the logged-in user's star."""
     return _toggle_star(request, Experience, ExperienceSerializer, experience_id)
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def api_logout(request):
+    """Revoke the caller's token (no-op for session-authenticated callers)."""
+    if request.auth is not None and hasattr(request.auth, "delete"):
+        request.auth.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
