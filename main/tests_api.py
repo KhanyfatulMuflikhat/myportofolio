@@ -287,6 +287,13 @@ class ExperienceAPITest(APITestCase):
         response = self.client.get(self.list_url, {"sort": "stars"})
         self.assertEqual(response.data[0]["id"], str(other.id))
 
+    def test_token_can_toggle_star(self):
+        user = get_user_model().objects.create_user("tokuser", password="pw12345!")
+        token, _ = Token.objects.get_or_create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        res = self.client.post(f"/api/v1/experiences/{self.experience.id}/star/")
+        self.assertEqual(res.status_code, 200)
+
 
 class ProjectAPITest(APITestCase):
     payload = {

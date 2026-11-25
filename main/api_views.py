@@ -2,7 +2,7 @@
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes,
 )
@@ -33,7 +33,7 @@ def _filtered_achievements(params):
 
 
 @api_view(["GET", "HEAD", "POST"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([AchievementPermission])
 def achievement_list(request):
     """GET: list with ?level, ?q, ?sort=stars. POST: create (owner only)."""
@@ -51,7 +51,7 @@ def achievement_list(request):
 
 
 @api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([AchievementPermission])
 def achievement_detail(request, achievement_id):
     """GET: read. PUT/PATCH: owner or Editor. DELETE: owner only."""
@@ -86,7 +86,7 @@ def _toggle_star(request, model, serializer_class, pk):
 
 
 @api_view(["POST"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def achievement_star(request, achievement_id):
     """POST: toggle the logged-in user's star."""
@@ -110,7 +110,7 @@ def _filtered_experiences(params):
 
 
 @api_view(["GET", "HEAD", "POST"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([ExperiencePermission])
 def experience_list(request):
     """GET: list with ?category, ?q, ?sort=stars. POST: create (owner only)."""
@@ -128,7 +128,7 @@ def experience_list(request):
 
 
 @api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([ExperiencePermission])
 def experience_detail(request, experience_id):
     """GET: read. PUT/PATCH: owner or Editor. DELETE: owner only."""
@@ -152,7 +152,7 @@ def experience_detail(request, experience_id):
 
 
 @api_view(["POST"])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def experience_star(request, experience_id):
     """POST: toggle the logged-in user's star."""
