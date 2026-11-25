@@ -1,8 +1,10 @@
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission, User
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 
 from main.models import Achievement, Experience
@@ -284,3 +286,58 @@ class ExperienceAPITest(APITestCase):
         self.assertEqual(self.client.get(self.list_url).data[0]["id"], str(self.experience.id))
         response = self.client.get(self.list_url, {"sort": "stars"})
         self.assertEqual(response.data[0]["id"], str(other.id))
+
+
+class ProjectAPITest(APITestCase):
+    payload = {
+        "title": "Portfolio App",
+        "description": "Mobile client",
+        "tech_stack": "Flutter, Django",
+        "project_url": "https://example.com/app",
+    }
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser("admin", password="pw12345!")
+        self.user = User.objects.create_user("user", password="pw12345!")
+
+    def _auth(self, user):
+        token, _ = Token.objects.get_or_create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+    def test_list_is_public(self):
+        self.assertEqual(self.client.get("/api/v1/projects/").status_code, 200)
+
+    def test_token_login_returns_token(self):
+        res = self.client.post(
+            "/api/v1/auth/token/",
+            {"username": "admin", "password": "pw12345!"}, format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("token", res.json())
+
+    def test_anonymous_cannot_create(self):
+        res = self.client.post("/api/v1/projects/", self.payload, format="json")
+        self.assertIn(res.status_code, (401, 403))
+
+    def test_regular_user_cannot_create(self):
+        self._auth(self.user)
+        res = self.client.post("/api/v1/projects/", self.payload, format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_superuser_with_token_can_create(self):
+        self._auth(self.admin)
+        res = self.client.post("/api/v1/projects/", self.payload, format="json")
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.json()["title"], "Portfolio App")
+
+    def test_blank_title_rejected(self):
+        self._auth(self.admin)
+        bad = {**self.payload, "title": "   "}
+        res = self.client.post("/api/v1/projects/", bad, format="json")
+        self.assertEqual(res.status_code, 400)
+
+    def test_logout_revokes_token(self):
+        self._auth(self.admin)
+        self.assertEqual(self.client.post("/api/v1/auth/logout/").status_code, 204)
+        self.assertFalse(Token.objects.filter(user=self.admin).exists())
