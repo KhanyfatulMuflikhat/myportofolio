@@ -35,10 +35,10 @@ class ExperiencePermission(IsPortfolioOwnerOrEditorOrReadOnly):
     edit_permission = "main.change_experience"
 
 
-class ProjectPermission(IsPortfolioOwnerOrEditorOrReadOnly):
+class ProjectPermission(BasePermission):
     """Anyone can read projects; only superusers can write."""
 
     def has_permission(self, request, view):
-        if request.method in IsPortfolioOwnerOrEditorOrReadOnly.SAFE_METHODS:
+        if request.method in SAFE_METHODS:
             return True
         return bool(request.user and request.user.is_superuser)
